@@ -69,8 +69,8 @@ spec:
                 command: ["/bin/sh", "-c", "echo 'Container stopping...' && sleep 5"]
           resources:
               limits:
-                memory: 256Mi
-                cpu: 200m
+                memory: 512Mi
+                cpu: 300m
               requests:
                 memory: 128Mi
                 cpu: 100m
