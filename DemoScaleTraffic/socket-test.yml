@@ -1,0 +1,41 @@
+config:
+  target: "http://localhost"
+  phases:
+    - duration: 60
+      arrivalRate: 100
+      rampTo: 1000
+  engines:
+    socketio: {}
+  socketio:
+    transports: ["websocket"]
+    path: "/api/socket"
+    query:
+      userId: "0333657671"
+
+scenarios:
+  - name: "Socket.IO stress test"
+    engine: socketio
+    flow:
+      - emit:
+          channel: "sendMessage"
+          data:
+            sender: "0333657671"
+            receiver: "0333657672"
+            is_group: false
+            content_type: "text"
+            text: "Hello from 011111111111"
+            typeSend: "0"
+          ack: false
+      - think: 1
+      - loop:
+          - emit:
+              channel: "sendMessage"
+              data:
+                sender: "0333657671"
+                receiver: "0333657672"
+                is_group: false
+                content_type: "text"
+                text: "Ping from 011111111111"
+                typeSend: "0"
+          - think: 2
+        count: 10

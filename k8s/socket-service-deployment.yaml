@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: socket-service
+  namespace: microservices
+spec:
+  replicas: 2
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0       # Không cho phép pod nào bị unavailable
+      maxSurge: 1             # Cho phép tạo tối đa 1 pod mới trước khi xóa pod cũ
+  selector:
+    matchLabels:
+      app: socket-service
+  template:
+    metadata:
+      labels:
+        app: socket-service
+    spec:
+      containers:
+        - name: socket-service
+          image: nguyentanthanh0709/socket-service:v1.0.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8182
+          env:
+            - name: NODE_ENV
+              value: development
+            - name: PORT
+              value: "8182"
+            - name: BROKER_1
+              value: kafka:9092
+            - name: USER_SERVICE_BASE_URL
+              value: http://user-service
+            - name: CLIENT_ORIGIN
+              value: http://localhost
+            - name: GROUP_ID
+              value: socket-service-group
+            - name: CLIENT_ID
+              value: socket-service
+            - name: REDIS_URL
+              value: redis://redis:6379
+            - name: CHAT_SERVICE_BASE_URL
+              value: http://chat-service
+          readinessProbe:
+            httpGet:
+              path: /api/socket
+              port: 8182
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            successThreshold: 1
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/socket
+              port: 8182
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 3
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/sh", "-c", "echo 'Container started' && sleep 2"]
+            preStop:
+              exec:
+                command: ["/bin/sh", "-c", "echo 'Container stopping...' && sleep 5"]
+          resources:
+              limits:
+                memory: 256Mi
+                cpu: 200m
+              requests:
+                memory: 128Mi
+                cpu: 100m
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: socket-service
+  namespace: microservices
+spec:
+  selector:
+    app: socket-service
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8182
+
+
+---
+
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: socket-service-pdb
+  namespace: microservices
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: socket-service
