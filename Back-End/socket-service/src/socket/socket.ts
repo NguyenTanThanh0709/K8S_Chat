@@ -20,22 +20,19 @@ export async function getReceiverSocketIds(userId: string): Promise<string[]> {
 }
 
 export async function initializeSocketServer(io: Server) {
-  const pubClient = createClient({
-    url: REDIS_URL,
-  });
-  const subClient = pubClient.duplicate();
 
+  
   redisClient = createClient({
     url: REDIS_URL,
   });
+  const subClient = redisClient.duplicate();
 
   await Promise.all([
     redisClient.connect(),
-    pubClient.connect(),
     subClient.connect(),
   ]);
 
-  io.adapter(createAdapter(pubClient, subClient));
+  io.adapter(createAdapter(redisClient, subClient));
   console.log("✅ Redis adapter connected");
 
   await subClient.pSubscribe(`${SIGNAL_CHANNEL_PREFIX}*`, async (message, channel) => {

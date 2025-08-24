@@ -9,22 +9,19 @@ const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
 let redisClient: ReturnType<typeof createClient>;
 
 export async function initializeVideoSocketServer(io: Server) {
-  const pubClient = createClient({
-    url: REDIS_URL,
-  });
-  const subClient = pubClient.duplicate();
 
+  
   redisClient = createClient({
     url: REDIS_URL,
   });
+  const subClient = redisClient.duplicate();
 
   await Promise.all([
     redisClient.connect(),
-    pubClient.connect(),
     subClient.connect(),
   ]);
 
-  io.adapter(createAdapter(pubClient, subClient));
+  io.adapter(createAdapter(redisClient, subClient));
 
   const videoIo = io.of("/video-socket");
 
