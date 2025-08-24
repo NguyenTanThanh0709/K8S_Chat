@@ -4,9 +4,10 @@ import { UserTListConfig, UserT as ProductType, UserTList } from 'src/types/prod
 
 import http from 'src/utils/http'
 
-interface BodyUpdateProfile extends Omit<User, '_id' | 'roles' | 'createdAt' | 'updatedAt' | 'email'> {
+interface BodyUpdateProfile extends Omit<User, '_id' | 'roles' | 'createdAt' | 'updatedAt' | 'email' | 'role'> {
   password?: string
   newPassword?: string
+  // role: string; // bắt buộc
 }
 
 interface UserAdminResponse {
