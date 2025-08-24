@@ -1,30 +1,37 @@
-# 🎟️ Hệ thống Đặt Vé Sự Kiện - Triển khai trên Kubernetes
+
+# 🎥 Hệ thống Chat & Video Call Hiệu Năng Cao
 
 ## 📌 Giới thiệu
 
-Dự án này là hệ thống đặt vé sự kiện (event ticketing) có khả năng **mở rộng, chịu tải cao** nhờ kiến trúc **microservices** triển khai trên **Kubernetes**.  
-Hệ thống bao gồm các service chính:
+Đây là hệ thống **chat và gọi video thời gian thực** được xây dựng với **Node.js, WebSocket** và triển khai trên **Kubernetes** để đạt khả năng **mở rộng, chịu tải cao**.  
+Hệ thống phục vụ nhu cầu trò chuyện, gọi video 1-1 và nhóm cho hàng ngàn người dùng cùng lúc.
 
-- **user-service**: Quản lý người dùng, đăng nhập, đăng ký, thông tin cá nhân.  
-- **event-service**: Quản lý sự kiện, lịch biểu, chi tiết chương trình.  
-- **booking-service**: Đặt vé, thanh toán, xác nhận vé.  
-- **chat-service**: Hỗ trợ trò chuyện, thông báo theo thời gian thực.  
-- **socket-service**: Xử lý realtime (WebSocket), gửi/nhận thông báo.  
+### Kiến trúc tổng quan
 
-Tất cả được đóng gói dưới dạng **Docker image** và triển khai trên **Minikube Kubernetes cluster**.  
-Ứng dụng hỗ trợ scaling bằng **Horizontal Pod Autoscaler (HPA)** để dễ dàng mở rộng khi có nhiều người dùng truy cập.
+- **user-service**: Quản lý người dùng, thông tin cá nhân, danh sách bạn bè, nhóm.  
+- **chat-service**: Lưu trữ và xử lý tin nhắn text, file, media.  
+- **socket-service**: Xử lý realtime (WebSocket), signaling WebRTC cho video call.  
+- **SFU (Selective Forwarding Unit)**: Quản lý stream video cho group call (sử dụng mediasoup / ion-sfu).  
+- **Redis & Kafka**: Pub/Sub, message queue, tối ưu hiệu năng và đồng bộ giữa microservices.  
 
 ---
 
 ## 🚀 Hướng dẫn chạy Source
 
 ### 1️⃣ Yêu cầu môi trường
-- [Docker](https://www.docker.com/)  
-- [Minikube](https://minikube.sigs.k8s.io/docs/)  
-- [kubectl](https://kubernetes.io/docs/tasks/tools/)  
-- Tài khoản [DockerHub](https://hub.docker.com/) (nếu muốn build & push image)
+- Docker  
+- Minikube  
+- kubectl  
+- Node.js v18+  
+- Tài khoản DockerHub (để push image)
 
 ---
+
+### 2️⃣ Clone repository
+```bash
+git clone https://github.com/NguyenTanThanh0709/K8S_Chat.git
+cd K8S_Chat
+
 
 # Hưỡng dẫn chạy Source
 Docker
