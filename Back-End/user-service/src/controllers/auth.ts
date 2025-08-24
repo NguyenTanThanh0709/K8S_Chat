@@ -78,6 +78,7 @@ export const register = async (req: Request, res: Response): Promise<Response> =
     newUser.name = name;
     newUser.email = email;
     newUser.password_hash = password;
+    newUser.role = "USER";
     newUser.avatar = 'https://img.freepik.com/premium-vector/character-avatar-isolated_729149-194801.jpg?semt=ais_hybrid&w=740'
 
 

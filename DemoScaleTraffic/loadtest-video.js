@@ -10,7 +10,9 @@ const videoPath = path.join(__dirname, "fake_video.y4m");
 const audioPath = path.join(__dirname, "fake_audio.wav");
 
 
-const BASE_URL = "http://localhost:3000/call?roomId=room033365767320&callerId=0333657673&type=sent&isGroup=1";
+const BASE_URL = "http://localhost:3000/call?callerId=0333657673&type=sent&isGroup=1";
+// hàm sleep
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function launchUser(userIndex, receiverId) {
 const browser = await puppeteer.launch({
@@ -26,18 +28,20 @@ const browser = await puppeteer.launch({
 });
 
   const page = await browser.newPage();
-  const url = `${BASE_URL}&receiverId=${receiverId}&fakeUser=${userIndex}`;
+  const url = `${BASE_URL}&receiverId=${receiverId}&roomId=room0333657673${receiverId}`;
+  console.log(url)
   await page.goto(url);
-  console.log(`🎥 User ${userIndex} joined call with receiverId ${receiverId}`);
+  console.log(`🎥 User ${userIndex} joined call with room ${receiverId}`);
 }
 
 (async () => {
-  const users = 10; // số client fake cho mỗi receiver
-  const receiverIds = [20, 21, 22, 23]; // 4 nhóm khác nhau
+  const users = 5; // số client fake cho mỗi receiver
+  const receiverIds = [20]; // 4 nhóm khác nhau
 
   for (const rid of receiverIds) {
     for (let i = 0; i < users; i++) {
       launchUser(i, rid); // không await để mở song song
+      await sleep(1000);
     }
   }
 })();

@@ -39,5 +39,5 @@ export class Report {
 
   // Thời điểm tạo report
   @CreateDateColumn({ type: "datetime", precision: 3, default: () => "CURRENT_TIMESTAMP(3)" })
-  createdAt: Date;
+  createdAt: Date = new Date();
 }

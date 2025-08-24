@@ -4,7 +4,7 @@ import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
 import { AiOutlineArrowLeft } from 'react-icons/ai';
-import { MdChat, MdDelete, MdVideoCall } from 'react-icons/md';
+import { MdChat, MdVideoCall } from 'react-icons/md';
 import InputEmoji from "react-input-emoji";
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -204,7 +204,7 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
         text: message,
         sender: PhoneSender,
         receiver: messagesData?.receiver || '',
-        is_group: selectedCategory !== '1',
+        is_group: selectedCategory == '2',
         content_type: 'text',
         avt: profileDataLS?.avatar,
         name: profileDataLS?.name
@@ -231,7 +231,7 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
     const env = (window as any).env;
 
     const apiUrl = env?.VITE_API_URL_DEV_USER ?? 'http://localhost:8180';
-    if (selectedCategory === '1') {
+    if (selectedCategory === '1' || selectedCategory === '4' ) {
       try {
         const response = await axios.post(`${apiUrl}/api/user/friend/friend/unread/reset`, {
           userPhone,
@@ -330,8 +330,8 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
       }
       const newMsg: IMessage = {
         sender: PhoneSender,
-        receiver: userData?.user.phone || '',
-        is_group: selectedCategory !== '1',
+        receiver: messagesData?.receiver || '',
+        is_group: selectedCategory == '2',
         content_type: typeFile,
         url_file: downloadURL,
         name_file: file.name,
@@ -400,7 +400,7 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
     if (socket) {
 
 
-      if (selectedCategory == '1') {
+      if (selectedCategory == '1' || selectedCategory == '4') {
 
         await sendSignalMessage({
           sender: callerId || '',
@@ -539,7 +539,6 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
           <div className="flex items-center gap-3">
             {/* <button onClick={() => handleVideoCallSFU(PhoneSender, selectedCategory !== '1' ? groupResponse?.id || "" : userData?.user.phone || "")} title="Gọi thoại" className="hover:bg-green-100 p-2 rounded-full"><MdCall className="text-2xl text-gray-600" /></button> */}
             <button onClick={() => handleVideoCall(PhoneSender, selectedCategory !== '1' ? groupResponse?.id || "" : userData?.user.phone || "")} title="Gọi video" className="hover:bg-green-100 p-2 rounded-full"><MdVideoCall className="text-2xl text-gray-600" /></button>
-            <button title="Xoá tất cả tin nhắn" className="hover:bg-red-100 p-2 rounded-full"><MdDelete className="text-2xl" /></button>
           </div>
         </div>
 

@@ -37,6 +37,8 @@ export default function SortUserList({ queryConfig, pageSize }: Props) {
     })
   }
 
+  
+
   return (
     <div className='w-full bg-gray-100 py-4 shadow-sm'>
       <div className='max-w-screen-xl mx-auto px-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4'>

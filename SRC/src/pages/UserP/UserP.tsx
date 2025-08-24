@@ -142,12 +142,12 @@ const UserP = () => {
           </div>
           <div>
             <span className="block text-gray-400">Address</span>
-            <span className="font-medium">{user?.data.data.address || 'N/A'}</span>
+            <span className="font-medium">{user?.data.data.address || '07, Liên Cơ, Hoà Đông, Krong Pak'}</span>
           </div>
           <div>
             <span className="block text-gray-400">Date of Birth</span>
             <span className="font-medium">
-              {user?.data.data.date_of_birth ? new Date(user?.data.data.date_of_birth).toLocaleDateString() : 'N/A'}
+              {user?.data.data.date_of_birth ? new Date(user?.data.data.date_of_birth).toLocaleDateString() : '07/09/2003'}
             </span>
           </div>
           <div>

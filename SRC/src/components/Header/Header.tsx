@@ -96,6 +96,8 @@ if (profile.role === 'ADMIN') {
       await notificationApi.updateNotification(purchase._id, { ...purchase, status: 'read' })
       const res = await friendApi.sendFriendRequest(body)
       toast[res.data.includes('yourself') ? 'warning' : 'success'](res.data)
+
+      queryClient.invalidateQueries(['notifications', profile?.phone])
     } catch (error) {
       toast.error((error as any)?.response?.data?.message || 'Lỗi kết bạn')
     }
@@ -109,6 +111,7 @@ if (profile.role === 'ADMIN') {
     try {
       await notificationApi.updateNotification(purchase._id, { ...purchase, status: 'read' })
       const res = await friendApi.unfriend(body)
+      queryClient.invalidateQueries(['notifications', profile?.phone])
       toast.success(res.data)
     } catch (error) {
       toast.error((error as any)?.response?.data?.message || 'Lỗi huỷ kết bạn')
@@ -209,13 +212,13 @@ if (profile.role === 'ADMIN') {
                                     onClick={() => handleAcceptFriend(n)}
                                     className='bg-green-500 text-white px-2 py-1 rounded text-xs'
                                   >
-                                    Accept
+                                    Chấp nhận
                                   </button>
                                   <button
                                     onClick={() => handleDeclineFriend(n)}
                                     className='bg-red-500 text-white px-2 py-1 rounded text-xs'
                                   >
-                                    Decline
+                                    Từ chối
                                   </button>
                                 </div>
                               )}

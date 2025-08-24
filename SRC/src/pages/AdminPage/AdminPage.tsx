@@ -6,11 +6,15 @@ import { AppContext } from 'src/contexts/app.context'
 import { useMutation } from '@tanstack/react-query'
 import ListUser from './Components/ListUser'
 import ListReport from './Components/ListReport'
+import { useQuery } from '@tanstack/react-query'
+import { User } from 'src/types/user.type'
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 const AdminPage: React.FC = () => {
   const { setIsAuthenticated, setProfile } = useContext(AppContext)
   const logoutMutation = useMutation(authApi.logoutAccount)
-
+const navigate = useNavigate()
   const [selectedItem, setSelectedItem] = useState<'users' | 'reports'>('users')
 
   const handleLogout = () => {
@@ -22,6 +26,25 @@ const AdminPage: React.FC = () => {
       }
     })
   }
+
+
+
+    const { data: profileDataLS, refetch } = useQuery<User>({
+      queryKey: ['profile'],
+      queryFn: async () => {
+        const raw = localStorage.getItem('profile');
+        if (!raw) throw new Error('No profile found in localStorage');
+        return JSON.parse(raw) as User;
+      },
+    });
+
+      useEffect(() => {
+  if (profileDataLS && profileDataLS.role !== 'ADMIN') {
+    toast.warning('Bạn không có quyền truy cập trang này!')
+    navigate('/') // quay về trang chủ
+  }
+}, [profileDataLS, navigate])
+  
 
   return (
     <div className="min-h-screen flex bg-gray-100">

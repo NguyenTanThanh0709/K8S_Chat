@@ -1,6 +1,6 @@
 import { AppDataSource } from "../database/data-source";
 import { User } from "../database/entities/UserEntity";
-import { Like, Not, In } from "typeorm";
+import { Like, Not, In, And } from "typeorm";
 import { User as UserInterface } from '../interface/type';
 import { Friend } from "../database/entities/FriendEntity";
 import { GroupMember } from "../database/entities/GroupMemberEntity";
@@ -93,6 +93,10 @@ interface PaginatedResponse {
   };
 }
 
+/**
+ * Lấy danh sách user với phân trang, có thể tìm kiếm theo phone,
+ * loại bỏ những người bị block và chính user đang đăng nhập.
+ */
 export const getUsersWithOptionalSearchAndPaginationService = async (
   phone: string,
   page: number = 0,
@@ -104,36 +108,43 @@ export const getUsersWithOptionalSearchAndPaginationService = async (
   const blockedSet = await getUserFriendsServiceBlock(phone);
   const blockedArray = [...blockedSet];
   const excludedPhones = [phone, ...blockedArray];
-  const userWhereCondition = {
-    ...(searchPhone ? { phone: Like(`%${searchPhone}%`) } : {}),
-    phone: Not(In(excludedPhones))
-  };
 
-  const orderBy = sortBy === 'createdAt' ? { createdAt: 'DESC' as const } : undefined;
+  // Kết hợp điều kiện tìm kiếm và loại bỏ danh sách blocked
+  const phoneCondition = searchPhone
+    ? And(Like(`%${searchPhone}%`), Not(In(excludedPhones)))
+    : Not(In(excludedPhones));
 
+  const userWhereCondition = { phone: phoneCondition };
 
+  // Sắp xếp
+  const orderBy =
+    sortBy === "createdAt" ? { createdAt: "DESC" as const } : undefined;
 
+  // Lấy danh sách user
   const users = await AppDataSource.getRepository(User).find({
     where: userWhereCondition,
     skip: page * pageSize,
     take: pageSize,
     order: orderBy,
-    select: ['phone', 'name', 'email', 'avatar', 'status', 'createdAt'],
+    select: ["phone", "name", "email", "avatar", "status", "createdAt"],
   });
 
-  // Fetch friends' phones and check friendship status
+  // Lấy danh sách bạn bè
   const friends = await getUserFriendsService(phone);
   const friendPhoneSet = new Set(
-    friends.map(f => f.user_phone === phone ? f.friend_phone : f.user_phone)
+    friends.map((f) => (f.user_phone === phone ? f.friend_phone : f.user_phone))
   );
 
-  const usersWithFriendStatus = users.map(user => ({
+  // Đánh dấu user nào đã là bạn bè
+  const usersWithFriendStatus = users.map((user) => ({
     ...user,
     isFriend: friendPhoneSet.has(user.phone),
   }));
 
-
-  const totalUsers = await AppDataSource.getRepository(User).count({ where: userWhereCondition });
+  // Tổng số user (để tính tổng trang)
+  const totalUsers = await AppDataSource.getRepository(User).count({
+    where: userWhereCondition,
+  });
 
   return {
     users: usersWithFriendStatus,
@@ -145,34 +156,43 @@ export const getUsersWithOptionalSearchAndPaginationService = async (
   };
 };
 
-
-export const getUserFriendsService = async (phone: string, name?: string) => {
-  const nameFilter = name ? `%${name}%` : null;
-
-  const friends = await AppDataSource.getRepository(Friend)
-    .createQueryBuilder('f')
-    .innerJoinAndSelect('f.friend', 'friend')
-    .where('(f.user_phone = :phone OR f.friend_phone = :phone)', { phone })
-    .andWhere('f.status = :status', { status: 'accepted' })
-    .andWhere(nameFilter ? 'friend.name LIKE :name' : '1=1', { name: nameFilter })
-    .getMany();
-
-  return friends
-};
-
-
+/**
+ * Lấy danh sách số điện thoại bị block bởi user (2 chiều)
+ */
 export const getUserFriendsServiceBlock = async (phone: string) => {
   const blockedRelations = await AppDataSource.getRepository(Friend)
-    .createQueryBuilder('f')
-    .where('(f.user_phone = :phone OR f.friend_phone = :phone)', { phone })
-    .andWhere('f.status = :status', { status: 'blocked' })
+    .createQueryBuilder("f")
+    .where("(f.user_phone = :phone OR f.friend_phone = :phone)", { phone })
+    .andWhere("f.status = :status", { status: "blocked" })
     .getMany();
 
   const blockedPhones = new Set<string>();
   for (const rel of blockedRelations) {
-    blockedPhones.add(rel.user_phone === phone ? rel.friend_phone : rel.user_phone);
+    blockedPhones.add(
+      rel.user_phone === phone ? rel.friend_phone : rel.user_phone
+    );
   }
   return blockedPhones;
+};
+
+/**
+ * Lấy danh sách bạn bè đã được chấp nhận (accepted)
+ * Có thể lọc theo tên bạn bè
+ */
+export const getUserFriendsService = async (phone: string, name?: string) => {
+  const nameFilter = name ? `%${name}%` : null;
+
+  const friends = await AppDataSource.getRepository(Friend)
+    .createQueryBuilder("f")
+    .innerJoinAndSelect("f.friend", "friend")
+    .where("(f.user_phone = :phone OR f.friend_phone = :phone)", { phone })
+    .andWhere("f.status = :status", { status: "accepted" })
+    .andWhere(nameFilter ? "friend.name LIKE :name" : "1=1", {
+      name: nameFilter,
+    })
+    .getMany();
+
+  return friends;
 };
 
 

@@ -16,7 +16,7 @@ export default function useQueryConfig() {
       page: queryParams.page || '0',
       limit: queryParams.limit,
       sort_by: queryParams.sort_by,
-      name: queryParams.name,
+      name: queryParams.name || '0',
       order: queryParams.order
     },
     isUndefined

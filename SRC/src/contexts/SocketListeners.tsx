@@ -48,7 +48,7 @@ export default function SocketListeners() {
 
       if (msg.is_group) {
         // 🔔 Tin nhắn nhóm
-        toast.success(`👥 Tin nhắn mới trong nhóm #${msg.receiver} từ ${msg.sender}`);
+        toast.success(`👥 Tin nhắn mới trong nhóm  từ ${msg.sender}`);
       } else {
         // 💬 Tin nhắn cá nhân
         toast.success(`📩 Tin nhắn mới từ SĐT: ${msg.sender}`);
