@@ -16,7 +16,7 @@ spec:
       policies:
       - type: Percent
         value: 100
-        periodSeconds: 15
+        periodSeconds: 30
     scaleDown:
       stabilizationWindowSeconds: 30
       policies:
@@ -57,7 +57,7 @@ spec:
       policies:
       - type: Percent
         value: 100
-        periodSeconds: 15
+        periodSeconds: 30
     scaleDown:
       stabilizationWindowSeconds: 30
       policies:
@@ -98,7 +98,7 @@ spec:
       policies:
       - type: Percent
         value: 100
-        periodSeconds: 15
+        periodSeconds: 30
     scaleDown:
       stabilizationWindowSeconds: 30
       policies:
