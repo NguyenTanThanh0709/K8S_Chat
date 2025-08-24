@@ -16,7 +16,7 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function launchUser(userIndex, receiverId) {
 const browser = await puppeteer.launch({
-  headless: true,
+  headless: "new",
   args: [
     "--use-fake-device-for-media-stream",
     "--use-fake-ui-for-media-stream",

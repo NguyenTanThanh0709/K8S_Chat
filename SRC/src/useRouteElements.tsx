@@ -53,6 +53,17 @@ export default function useRouteElements() {
         }
       ]
     },
+    {
+      path: '',
+      children: [
+        {
+          path: '/call',
+          element: (
+              <VideoCall />
+          )
+        }
+      ]
+    },
 
     // ✅ Tất cả các route còn lại ĐỀU phải đăng nhập
     {
@@ -105,18 +116,12 @@ export default function useRouteElements() {
               <NotFound />
             </MainLayout>
           )
-        },
-        {
-          path: '/call',
-          element: (
-              <VideoCall />
-          )
         }
         ,
         {
           path: '/admin-dashboard',
           element: (
-              <AdminPage />
+            <AdminPage />
           )
         }
       ]
