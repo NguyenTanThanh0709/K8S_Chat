@@ -10,7 +10,7 @@ const videoPath = path.join(__dirname, "fake_video.y4m");
 const audioPath = path.join(__dirname, "fake_audio.wav");
 
 
-const BASE_URL = "http://localhost:3000/call?callerId=0333657673&type=sent&isGroup=1";
+const BASE_URL = "http://localhost/call?callerId=0333657673&type=sent&isGroup=1";
 // hàm sleep
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 

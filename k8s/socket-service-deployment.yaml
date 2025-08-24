@@ -9,7 +9,7 @@ spec:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 0       # Không cho phép pod nào bị unavailable
-      maxSurge: 1             # Cho phép tạo tối đa 1 pod mới trước khi xóa pod cũ
+      maxSurge: 1            # Cho phép tạo tối đa 1 pod mới trước khi xóa pod cũ
   selector:
     matchLabels:
       app: socket-service
@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: socket-service
-          image: nguyentanthanh0709/socket-service:v1.0.0
+          image: nguyentanthanh0709/socket-service:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8182
