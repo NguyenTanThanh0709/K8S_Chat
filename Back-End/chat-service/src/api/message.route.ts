@@ -17,6 +17,8 @@ router.put('/delete-for-me', MessageController.deleteMessageForMe);
 router.put('/delete-all-for-me', MessageController.deleteAllMessagesForMe);
 router.get('/search', MessageController.searchMessages);
 router.post('/from-date', MessageController.getMessagesFromDate);
+router.get("/:id/prev-media", MessageController.getPrevMediaMessage);
+router.get("/:id/next-media", MessageController.getNextMediaMessage);
 
 
 export default router;

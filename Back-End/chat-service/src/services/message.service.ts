@@ -252,4 +252,46 @@ export class MessageService {
   }
 
 
+  // Lấy message ảnh/video ngay trước message hiện tại
+static async  getPrevMediaMessage(currentMessageId: string) {
+  const currentMessage = await MessageModel.findById(currentMessageId);
+  if (!currentMessage) throw new Error("Message not found");
+
+  const prevMedia = await MessageModel.findOne({
+    $or: [
+      { sender: currentMessage.sender, receiver: currentMessage.receiver },
+      { sender: currentMessage.receiver, receiver: currentMessage.sender }
+    ],
+    is_group: currentMessage.is_group,
+    content_type: { $in: ["image", "video"] },
+    timestamp: { $lt: currentMessage.timestamp } // nhỏ hơn => phía trước
+  })
+    .sort({ timestamp: -1 }) // lấy gần nhất phía trước
+    .exec();
+
+  return prevMedia;
+}
+
+// Lấy message ảnh/video ngay sau message hiện tại
+static async  getNextMediaMessage(currentMessageId: string) {
+  const currentMessage = await MessageModel.findById(currentMessageId);
+  if (!currentMessage) throw new Error("Message not found");
+
+  const nextMedia = await MessageModel.findOne({
+    $or: [
+      { sender: currentMessage.sender, receiver: currentMessage.receiver },
+      { sender: currentMessage.receiver, receiver: currentMessage.sender }
+    ],
+    is_group: currentMessage.is_group,
+    content_type: { $in: ["image", "video"] },
+    timestamp: { $gt: currentMessage.timestamp } // lớn hơn => phía sau
+  })
+    .sort({ timestamp: 1 }) // lấy gần nhất phía sau
+    .exec();
+
+  return nextMedia;
+}
+
+
+
 }

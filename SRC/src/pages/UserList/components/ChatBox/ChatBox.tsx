@@ -585,8 +585,8 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
       toast.error("Tìm kiếm thất bại");
     }
   };
-const [isMessageListOpen, setIsMessageListOpen] = useState(false);
-const [messagesList, setMessagesList] = useState<IMessage[]>([]);
+  const [isMessageListOpen, setIsMessageListOpen] = useState(false);
+  const [messagesList, setMessagesList] = useState<IMessage[]>([]);
   const handleOpenMessage = async (msg: IMessage) => {
     try {
       const timestamp = msg.timestamp ? new Date(msg.timestamp).toISOString() : undefined;
@@ -605,6 +605,51 @@ const [messagesList, setMessagesList] = useState<IMessage[]>([]);
     } catch (err) {
       console.error(err);
       toast.error("Không thể mở tin nhắn");
+    }
+  };
+
+
+  const [currentMedia, setCurrentMedia] = useState<IMessage | null>(null);
+  const [loadingMedia, setLoadingMedia] = useState(false);
+  const fetchPrevMedia = async () => {
+    if (!currentMedia) return;
+    setLoadingMedia(true);
+    try {
+      const res = await messagesApi.getPrevMediaMessage(currentMedia._id!);
+      if (res.data) {
+        setCurrentMedia(res.data);
+      } else {
+        toast.info("Không còn media cũ hơn");
+      }
+    } catch (err) {
+      console.error(err);
+      // toast.warn("Hết Ảnh rồi");
+    } finally {
+      setLoadingMedia(false);
+    }
+  };
+
+  const fetchNextMedia = async () => {
+    if (!currentMedia) return;
+    setLoadingMedia(true);
+    try {
+      const res = await messagesApi.getNextMediaMessage(currentMedia._id!);
+      if (res.data) {
+        setCurrentMedia(res.data);
+      } else {
+        toast.info("Không còn media mới hơn");
+      }
+    } catch (err) {
+      console.error(err);
+      // toast.warn("Hết ảnh rồi");
+    } finally {
+      setLoadingMedia(false);
+    }
+  };
+
+  const handleOpenMedia = (msg: IMessage) => {
+    if (msg.content_type === "image" || msg.content_type === "video") {
+      setCurrentMedia(msg);
     }
   };
 
@@ -711,74 +756,73 @@ const [messagesList, setMessagesList] = useState<IMessage[]>([]);
               )}
 
               {isMessageListOpen && (
-  <div
-    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-    onClick={() => setIsMessageListOpen(false)} // click nền để đóng
-  >
-    <div
-      className="bg-white rounded-lg p-4 max-w-lg w-full max-h-[80vh] overflow-y-auto relative"
-      onClick={(e) => e.stopPropagation()} // tránh click trong modal làm đóng
-    >
-      <h3 className="text-lg font-semibold mb-2">Tin nhắn</h3>
-      <button
-        onClick={() => setIsMessageListOpen(false)}
-        className="absolute top-2 right-2 text-red-500 text-lg font-bold"
-      >
-        ✕
-      </button>
-
-      {messagesList.length === 0 ? (
-        <p className="text-gray-500">Không có tin nhắn</p>
-      ) : (
-        <div className="space-y-3">
-          {messagesList.map((msg, idx) => {
-            const isOwnMessage = msg.sender === PhoneSender;
-            return (
-              <div
-                key={idx}
-                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
-              >
-                {!isOwnMessage && (
-                  <img
-                    src={msg.avt}
-                    alt="avatar"
-                    className="w-8 h-8 rounded-full object-cover mr-2"
-                  />
-                )}
                 <div
-                  className={`p-2 rounded-lg max-w-[70%] ${
-                    isOwnMessage ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'
-                  }`}
+                  className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                  onClick={() => setIsMessageListOpen(false)} // click nền để đóng
                 >
-                  {msg.content_type === 'text' && <span>{msg.text}</span>}
-                  {msg.content_type === 'image' && msg.url_file && (
-                    <img src={msg.url_file} className="w-full rounded" alt={msg.name_file} />
-                  )}
-                  {msg.content_type === 'video' && msg.url_file && (
-                    <video src={msg.url_file} controls className="w-full rounded" />
-                  )}
-                  {msg.content_type === 'file' && msg.url_file && (
-                    <a
-                      href={msg.url_file}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline text-sm block"
+                  <div
+                    className="bg-white rounded-lg p-4 max-w-lg w-full max-h-[80vh] overflow-y-auto relative"
+                    onClick={(e) => e.stopPropagation()} // tránh click trong modal làm đóng
+                  >
+                    <h3 className="text-lg font-semibold mb-2">Tin nhắn</h3>
+                    <button
+                      onClick={() => setIsMessageListOpen(false)}
+                      className="absolute top-2 right-2 text-red-500 text-lg font-bold"
                     >
-                      📎 {msg.name_file}
-                    </a>
-                  )}
-                  <div className="text-xs text-gray-400 mt-1">
-                    {moment(msg.timestamp).format('HH:mm DD/MM/YYYY')}
+                      ✕
+                    </button>
+
+                    {messagesList.length === 0 ? (
+                      <p className="text-gray-500">Không có tin nhắn</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {messagesList.map((msg, idx) => {
+                          const isOwnMessage = msg.sender === PhoneSender;
+                          return (
+                            <div
+                              key={idx}
+                              className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+                            >
+                              {!isOwnMessage && (
+                                <img
+                                  src={msg.avt}
+                                  alt="avatar"
+                                  className="w-8 h-8 rounded-full object-cover mr-2"
+                                />
+                              )}
+                              <div
+                                className={`p-2 rounded-lg max-w-[70%] ${isOwnMessage ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'
+                                  }`}
+                              >
+                                {msg.content_type === 'text' && <span>{msg.text}</span>}
+                                {msg.content_type === 'image' && msg.url_file && (
+                                  <img src={msg.url_file} className="w-full rounded" alt={msg.name_file} />
+                                )}
+                                {msg.content_type === 'video' && msg.url_file && (
+                                  <video src={msg.url_file} controls className="w-full rounded" />
+                                )}
+                                {msg.content_type === 'file' && msg.url_file && (
+                                  <a
+                                    href={msg.url_file}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="underline text-sm block"
+                                  >
+                                    📎 {msg.name_file}
+                                  </a>
+                                )}
+                                <div className="text-xs text-gray-400 mt-1">
+                                  {moment(msg.timestamp).format('HH:mm DD/MM/YYYY')}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-    </div>
-  </div>
-)}
+              )}
 
 
 
@@ -870,8 +914,9 @@ const [messagesList, setMessagesList] = useState<IMessage[]>([]);
                           <div className="flex justify-center mb-2">
                             <img
                               src={message.url_file}
+                              onClick={() => handleOpenMedia(message)}
                               alt={message.name_file || 'Image'}
-                              onClick={() => setMediaPreview({ type: 'image', url: message.url_file! })}
+                              // onClick={() => setMediaPreview({ type: 'image', url: message.url_file! })}
                               className="rounded-lg max-w-full w-full max-h-[300px] object-contain"
                             />
                           </div>
@@ -905,7 +950,8 @@ const [messagesList, setMessagesList] = useState<IMessage[]>([]);
                           <div className="flex justify-center mb-2">
                             <video
                               controls
-                              onClick={() => setMediaPreview({ type: 'video', url: message.url_file! })}
+                              // onClick={() => setMediaPreview({ type: 'video', url: message.url_file! })}
+                              onClick={() => handleOpenMedia(message)}
                               className="rounded-lg w-full max-w-xs max-h-[300px] object-contain"
                               src={message.url_file}
                             />
@@ -1044,11 +1090,9 @@ const [messagesList, setMessagesList] = useState<IMessage[]>([]);
 
         </div>
       </div>
-      {mediaPreview && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col items-center justify-center"
-        >
-          {/* Nút control */}
+
+      {currentMedia && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
           <div className="absolute top-0 left-1/2 transform -translate-x-1/2 flex gap-4 z-50">
             <button
               onClick={handleZoomIn}
@@ -1068,37 +1112,46 @@ const [messagesList, setMessagesList] = useState<IMessage[]>([]);
             >
               🔄 Rotate
             </button>
-            <button
-              onClick={() => {
-                setMediaPreview(null);
-                setScale(1);
-                setRotation(0);
-              }}
-              className="px-3 py-1 bg-red-500 text-white rounded shadow hover:bg-red-600"
-            >
-              ✕ Đóng
-            </button>
+
+          </div>
+          <button
+            className="absolute top-4 right-4 text-white text-2xl"
+            onClick={() => setCurrentMedia(null)}
+          >
+            ✕
+          </button>
+
+          {/* Nút trái */}
+          <button
+            className="absolute left-4 text-white text-3xl"
+            onClick={fetchPrevMedia}
+            disabled={loadingMedia}
+          >
+            ⬅
+          </button>
+
+          {/* Nội dung media */}
+          <div className="max-w-4xl max-h-[80vh]">
+            {currentMedia.content_type === "image" && (
+              <img style={{
+                transform: `scale(${scale}) rotate(${rotation}deg)`,
+              }} src={currentMedia.url_file} alt="" className="max-h-[80vh] mx-auto rounded" />
+            )}
+            {currentMedia.content_type === "video" && (
+              <video style={{
+                transform: `scale(${scale}) rotate(${rotation}deg)`,
+              }} src={currentMedia.url_file} controls className="max-h-[80vh] mx-auto rounded" />
+            )}
           </div>
 
-          {mediaPreview.type === "image" ? (
-            <img
-              src={mediaPreview.url}
-              className="max-w-[90%] max-h-[80%] object-contain rounded-lg shadow-lg transition-transform duration-300"
-              style={{
-                transform: `scale(${scale}) rotate(${rotation}deg)`,
-              }}
-            />
-          ) : (
-            <video
-              src={mediaPreview.url}
-              controls
-              style={{
-                transform: `scale(${scale}) rotate(${rotation}deg)`,
-              }}
-              className="max-w-[90%] max-h-[80%] object-contain rounded-lg shadow-lg transition-transform duration-300"
-            />
-
-          )}
+          {/* Nút phải */}
+          <button
+            className="absolute right-4 text-white text-3xl"
+            onClick={fetchNextMedia}
+            disabled={loadingMedia}
+          >
+            ➡
+          </button>
         </div>
       )}
 

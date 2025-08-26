@@ -134,5 +134,49 @@ static async deleteMessageForMe(req: Request, res: Response): Promise<void> {
     }
   }
 
+    /**
+   * Lấy media (image/video) liền trước
+   * GET /api/messages/:id/prev-media
+   */
+  static async getPrevMediaMessage(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const prevMedia = await MessageService.getPrevMediaMessage(id);
+
+      if (!prevMedia) {
+        res.status(404).json({ message: "Hết ảnh rồi nè" });
+        return;
+      }
+
+      res.status(200).json(prevMedia);
+    } catch (error: any) {
+      console.error("getPrevMediaMessage error:", error);
+      res.status(500).json({ message: error.message || "Internal server error" });
+    }
+  }
+
+  /**
+   * Lấy media (image/video) liền sau
+   * GET /api/messages/:id/next-media
+   */
+  static async getNextMediaMessage(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const nextMedia = await MessageService.getNextMediaMessage(id);
+
+      if (!nextMedia) {
+        res.status(404).json({ message: "Hết ảnh rồi" });
+        return;
+      }
+
+      res.status(200).json(nextMedia);
+    } catch (error: any) {
+      console.error("getNextMediaMessage error:", error);
+      res.status(500).json({ message: error.message || "Internal server error" });
+    }
+  }
+
 
 }

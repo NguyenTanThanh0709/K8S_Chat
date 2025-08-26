@@ -40,6 +40,18 @@ const messagesApi = {
     getMessagesFromDate(userPhone: string, receiver: string, isGroup: boolean, startDate: string | Date) {
         return http1.post<IMessage[]>('/api/chat/message/from-date', { userPhone, receiver, isGroup, startDate });
     }, 
+
+        // 📌 Lấy media (ảnh/video) liền trước
+    getPrevMediaMessage(messageId: string) {
+        return http1.get<IMessage>(`/api/chat/message/${messageId}/prev-media`);
+    },
+
+    // 📌 Lấy media (ảnh/video) liền sau
+    getNextMediaMessage(messageId: string) {
+        return http1.get<IMessage>(`/api/chat/message/${messageId}/next-media`);
+    }
+
+    
 }
 
 export default messagesApi;

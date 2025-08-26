@@ -10,4 +10,5 @@ router.patch('/send/:id', NotificationController.updateStatus);
 // GET /api/message/get-messages
 router.get('/get-notifications/:receiverId', NotificationController.getByReceiver);
 
+
 export default router;
