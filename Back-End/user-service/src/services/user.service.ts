@@ -5,6 +5,7 @@ import { User as UserInterface } from '../interface/type';
 import { Friend } from "../database/entities/FriendEntity";
 import { GroupMember } from "../database/entities/GroupMemberEntity";
 import { Report } from "../database/entities/ReportEntity";
+import { UserSession } from "../database/entities/UserSession";
 import crypto from "crypto";
 
 export const getProfileByPhone = async (phone: string): Promise<UserInterface | null> => {
@@ -212,6 +213,10 @@ export const getUserFriendsServiceControll = async (phone: string, name?: string
   } else {
     query.andWhere('f.status = :status', { status: 'accepted' });
   }
+
+  // 📌 Sắp xếp theo last_message_date (cũ nhất lên đầu)
+query.orderBy('f.last_message_date', 'DESC'); // ASC = ngày nhỏ nhất trước
+
 
   const friends = await query.getMany();
 
@@ -495,4 +500,48 @@ export const updateReportStatusService = async (id: string, status: string) => {
   await reportRepo.save(report);
 
   return report;
+};
+
+// 1. Tạo session khi user đăng nhập
+export const createUserSessionService = async (
+  userPhone: string,
+  ipAddress?: string,
+  userAgent?: string
+) => {
+  const sessionRepo = AppDataSource.getRepository(UserSession);
+
+  const session = sessionRepo.create({
+    user_phone: userPhone,
+    ipAddress,
+    userAgent,
+    status: "ONLINE",
+  });
+
+  return await sessionRepo.save(session);
+};
+
+
+// 2. Cập nhật logout (khi user đăng xuất)
+export const logoutUserSessionService = async (id: number) => {
+  const sessionRepo = AppDataSource.getRepository(UserSession);
+
+  const session = await sessionRepo.findOne({ where: { id } });
+  if (!session) {
+    throw new Error("Session not found");
+  }
+
+  session.logoutAt = new Date();
+  session.status = "OFFLINE";
+
+  return await sessionRepo.save(session);
+};
+
+
+export const getUserSessionsService = async (userPhone: string) => {
+  const sessionRepo = AppDataSource.getRepository(UserSession);
+  return await sessionRepo.find({
+    where: { user_phone: userPhone },
+    order: { loginAt: "DESC" },
+    take: 20, // giới hạn 20 sessions
+  });
 };

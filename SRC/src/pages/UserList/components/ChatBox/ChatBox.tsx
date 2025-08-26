@@ -4,7 +4,7 @@ import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
 import { AiOutlineArrowLeft } from 'react-icons/ai';
-import { MdChat, MdVideoCall } from 'react-icons/md';
+import { MdChat, MdVideoCall, MdDelete } from 'react-icons/md';
 import InputEmoji from "react-input-emoji";
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -231,7 +231,7 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
     const env = (window as any).env;
 
     const apiUrl = env?.VITE_API_URL_DEV_USER ?? 'http://localhost:8180';
-    if (selectedCategory === '1' || selectedCategory === '4' ) {
+    if (selectedCategory === '1' || selectedCategory === '4') {
       try {
         const response = await axios.post(`${apiUrl}/api/user/friend/friend/unread/reset`, {
           userPhone,
@@ -514,6 +514,101 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
     }
   }
 
+  // Xoá tin nhắn cho riêng mình
+  const handleDeleteForMe = async (messageId: string) => {
+    try {
+      await messagesApi.deleteMessageForMe(messageId, PhoneSender);
+      setAllMessages((prev) => prev.filter(m => m._id !== messageId)); // ẩn tin nhắn đã xoá
+      toast.success("Đã xoá tin nhắn cho bạn");
+    } catch (err) {
+      toast.error("Xoá tin nhắn thất bại");
+      console.error(err);
+    }
+  };
+
+  // Thu hồi tin nhắn (chỉ người gửi mới được)
+  const handleRecall = async (messageId: string) => {
+    try {
+      await messagesApi.recallMessage(messageId, PhoneSender);
+      setAllMessages((prev) =>
+        prev.map((m) =>
+          m._id === messageId ? { ...m, is_recalled: true, text: '', url_file: undefined, name_file: undefined } : m
+        )
+      );
+      toast.success("Thu hồi tin nhắn thành công");
+    } catch (err) {
+      toast.error("Thu hồi tin nhắn thất bại");
+      console.error(err);
+    }
+  };
+
+  const handleDeleteAllMessages = async (
+    userPhone: string,
+    receiver: string,
+    isGroup: boolean
+  ) => {
+    if (!userPhone || !receiver) return;
+
+    try {
+      const res = await messagesApi.deleteAllMessagesForMe(userPhone, receiver, isGroup);
+      console.log(res.data);
+      toast.success("Đã xoá tất cả tin nhắn cho bạn!");
+      setAllMessages([])
+    } catch (error: any) {
+      console.error("Error deleting all messages:", error);
+      alert("Xoá tất cả tin nhắn thất bại!");
+    }
+  };
+
+  const [isOpen, setIsOpen] = useState(false); // modal mở/tắt
+  const [keyword, setKeyword] = useState(""); // từ khoá tìm kiếm
+  const [searchKeyword, setsearchKeyword] = useState<IMessage[]>([]); // kết quả tìm kiếm
+  const [searchKeyword1, setsearchKeyword1] = useState<IMessage[]>([]); // kết quả tìm kiếm
+  const currentUser = PhoneSender; // để xác định "Bạn"
+  const handleSearch = async () => {
+    if (!keyword.trim()) return;
+
+    try {
+      const isGroup = selectedCategory !== '1';
+      const results = await messagesApi.searchMessages(
+        PhoneSender,
+        messagesData?.receiver || '',
+        isGroup,
+        keyword,
+        50 // limit
+      );
+
+      setsearchKeyword(results.data); // lưu kết quả
+      setIsOpen(true); // mở modal
+    } catch (err) {
+      console.error("Search failed:", err);
+      toast.error("Tìm kiếm thất bại");
+    }
+  };
+const [isMessageListOpen, setIsMessageListOpen] = useState(false);
+const [messagesList, setMessagesList] = useState<IMessage[]>([]);
+  const handleOpenMessage = async (msg: IMessage) => {
+    try {
+      const timestamp = msg.timestamp ? new Date(msg.timestamp).toISOString() : undefined;
+
+      const isGroup = selectedCategory !== '1';
+      const messages = await messagesApi.getMessagesFromDate(
+        PhoneSender,
+        messagesData?.receiver || '',
+        isGroup,
+        timestamp || ''  // dùng '' thay vì null
+      );
+      setIsOpen(false); // ẩn modal search
+      setMessagesList(messages.data); // lưu tin nhắn
+      setIsMessageListOpen(true); // mở modal list tin nhắn
+
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể mở tin nhắn");
+    }
+  };
+
+
   return (
     <div className='flex flex-col bg-white p-4 shadow-md rounded-md border'>
 
@@ -539,6 +634,156 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
           <div className="flex items-center gap-3">
             {/* <button onClick={() => handleVideoCallSFU(PhoneSender, selectedCategory !== '1' ? groupResponse?.id || "" : userData?.user.phone || "")} title="Gọi thoại" className="hover:bg-green-100 p-2 rounded-full"><MdCall className="text-2xl text-gray-600" /></button> */}
             <button onClick={() => handleVideoCall(PhoneSender, selectedCategory !== '1' ? groupResponse?.id || "" : userData?.user.phone || "")} title="Gọi video" className="hover:bg-green-100 p-2 rounded-full"><MdVideoCall className="text-2xl text-gray-600" /></button>
+            {/* Thêm nút xoá all tin nhắn */}
+            <button
+              onClick={() =>
+                handleDeleteAllMessages(
+                  PhoneSender,
+                  selectedCategory !== '1' ? groupResponse?.id || "" : userData?.user.phone || "",
+                  selectedCategory !== '1' // isGroup
+                )
+              }
+              title="Xoá tất cả tin nhắn"
+              className="hover:bg-red-100 p-2 rounded-full"
+            >
+              <MdDelete className="text-2xl text-red-600" />
+            </button>
+
+            <div className="flex items-center gap-3">
+              {/* Button tìm kiếm */}
+              {/* Button + Input */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleSearch} // gọi hàm khi click
+                  title="Tìm kiếm tin nhắn"
+                  className="hover:bg-blue-100 p-2 rounded-full"
+                >
+                  🔍
+                </button>
+
+                <input
+                  type="text"
+                  value={keyword}
+                  onChange={(e) => setKeyword(e.target.value)}
+                  placeholder="Nhập từ khoá..."
+                  className="border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                />
+              </div>
+
+              {isOpen && (
+                <div
+                  className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+                  onClick={() => setIsOpen(false)} // click nền đóng modal
+                >
+                  <div
+                    className="bg-white rounded-lg p-4 max-w-md w-full relative"
+                    onClick={(e) => e.stopPropagation()} // tránh click trong modal làm đóng
+                  >
+                    <h3 className="text-lg font-semibold mb-2">Kết quả tìm kiếm</h3>
+                    <button
+                      onClick={() => setIsOpen(false)}
+                      className="absolute top-2 right-2 text-red-500"
+                    >
+                      ✕
+                    </button>
+
+                    <div className="max-h-60 overflow-y-auto">
+                      {searchKeyword.length === 0 ? (
+                        <p className="text-gray-500">Không tìm thấy kết quả</p>
+                      ) : (
+                        searchKeyword.map((msg, idx) => (
+                          <div
+                            key={idx}
+                            className="p-2 border-b last:border-b-0 cursor-pointer hover:bg-gray-100"
+                            onClick={() => handleOpenMessage(msg)}
+                          >
+                            <p className="text-sm font-semibold">{msg.name || msg.sender}</p>
+                            <p className="text-sm">{msg.text || msg.name_file}</p>
+                            <span className="text-xs text-gray-400">
+                              {moment(msg.timestamp).format('HH:mm DD/MM/YYYY')}
+                            </span>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {isMessageListOpen && (
+  <div
+    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    onClick={() => setIsMessageListOpen(false)} // click nền để đóng
+  >
+    <div
+      className="bg-white rounded-lg p-4 max-w-lg w-full max-h-[80vh] overflow-y-auto relative"
+      onClick={(e) => e.stopPropagation()} // tránh click trong modal làm đóng
+    >
+      <h3 className="text-lg font-semibold mb-2">Tin nhắn</h3>
+      <button
+        onClick={() => setIsMessageListOpen(false)}
+        className="absolute top-2 right-2 text-red-500 text-lg font-bold"
+      >
+        ✕
+      </button>
+
+      {messagesList.length === 0 ? (
+        <p className="text-gray-500">Không có tin nhắn</p>
+      ) : (
+        <div className="space-y-3">
+          {messagesList.map((msg, idx) => {
+            const isOwnMessage = msg.sender === PhoneSender;
+            return (
+              <div
+                key={idx}
+                className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
+              >
+                {!isOwnMessage && (
+                  <img
+                    src={msg.avt}
+                    alt="avatar"
+                    className="w-8 h-8 rounded-full object-cover mr-2"
+                  />
+                )}
+                <div
+                  className={`p-2 rounded-lg max-w-[70%] ${
+                    isOwnMessage ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-800'
+                  }`}
+                >
+                  {msg.content_type === 'text' && <span>{msg.text}</span>}
+                  {msg.content_type === 'image' && msg.url_file && (
+                    <img src={msg.url_file} className="w-full rounded" alt={msg.name_file} />
+                  )}
+                  {msg.content_type === 'video' && msg.url_file && (
+                    <video src={msg.url_file} controls className="w-full rounded" />
+                  )}
+                  {msg.content_type === 'file' && msg.url_file && (
+                    <a
+                      href={msg.url_file}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="underline text-sm block"
+                    >
+                      📎 {msg.name_file}
+                    </a>
+                  )}
+                  <div className="text-xs text-gray-400 mt-1">
+                    {moment(msg.timestamp).format('HH:mm DD/MM/YYYY')}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  </div>
+)}
+
+
+
+            </div>
+
           </div>
         </div>
 
@@ -563,7 +808,7 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
                     />
                   )}
 
-                  <div className="flex flex-col max-w-[70%]">
+                  <div className="flex flex-col max-w-[100%]">
                     {/* 👤 Name of sender */}
                     <span className="text-xs text-gray-500 mb-1 whitespace-nowrap">
                       {isOwnMessage ? '' : message.name || message.sender}
@@ -583,6 +828,22 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
                                 sameElse: 'DD/MM/YYYY HH:mm:ss',
                               })}
                             </span>
+                            {/* Thêm action menu */}
+                            <button
+                              onClick={() => handleDeleteForMe(message._id || "")}
+                              className="text-xs text-red-500 mt-2 hover:underline text-left"
+                            >
+                              Xoá cho tôi
+                            </button>
+
+                            {isOwnMessage && (
+                              <button
+                                onClick={() => handleRecall(message._id || "")}
+                                className="text-xs text-yellow-600 mt-1 hover:underline text-left"
+                              >
+                                Thu hồi
+                              </button>
+                            )}
                           </div>
                         </div>
                       }
@@ -592,11 +853,16 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
 
                       {/* Bubble */}
                       <div
-                        className={`p-3 rounded-xl text-sm inline-block ${message.content_type === 'text' || message.content_type === 'file'
-                          ? isOwnMessage
-                            ? 'bg-blue-400 text-white'
-                            : 'bg-white border'
-                          : ''
+                        className={`p-3 rounded-xl text-sm inline-block break-words leading-relaxed
+    ${message.content_type === 'text'
+                            ? isOwnMessage
+                              ? 'bg-blue-500 text-white max-w-[100%] text-left'
+                              : 'bg-white border max-w-[100%] text-left'
+                            : message.content_type === 'file'
+                              ? isOwnMessage
+                                ? 'bg-blue-400 text-white'
+                                : 'bg-white border'
+                              : ''
                           }`}
                       >
                         {/* IMAGE */}
@@ -611,19 +877,15 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
                           </div>
                         )}
 
+                        {/* VIDEO CALL */}
                         {message.content_type === 'video_call_signal' && (
                           <div className={`w-full flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
                             <div
                               className={`w-full flex items-center gap-2 p-3 rounded-xl shadow-sm
-        ${isOwnMessage ? 'bg-green-50 text-green-900' : 'bg-blue-50 text-blue-900'}
-      `}
+          ${isOwnMessage ? 'bg-green-50 text-green-900' : 'bg-blue-50 text-blue-900'}
+        `}
                             >
-                              {/* Icon + Avatar */}
-                              <div className="flex items-center gap-2">
-                                <span className="text-xl">📹</span>
-                              </div>
-
-                              {/* Nội dung full width */}
+                              <span className="text-xl">📹</span>
                               <div className="flex flex-col w-full">
                                 <span className="font-semibold">
                                   {isOwnMessage
@@ -637,7 +899,6 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
                             </div>
                           </div>
                         )}
-
 
                         {/* VIDEO */}
                         {message.content_type === 'video' && message.url_file && (
@@ -657,7 +918,7 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
                             href={message.url_file}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="underline text-sm block border mb-1"
+                            className="underline text-sm block border mb-1 break-words max-w-[250px]"
                           >
                             📎 {message.name_file}
                           </a>
@@ -665,9 +926,10 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
 
                         {/* TEXT */}
                         {message.content_type === 'text' && message.text && (
-                          <div className="text-sm break-words">{message.text}</div>
+                          <div className="">{message.text}</div>
                         )}
                       </div>
+
 
                     </Popover>
 
@@ -742,6 +1004,12 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
             placeholder="Nhập tin nhắn..."
             shouldReturn={true}
             shouldConvertEmojiToImage={false}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) { // Shift+Enter vẫn xuống dòng
+                e.preventDefault();
+                sendTextMessage(textMessage, setTextMessage);
+              }
+            }}
 
           />
           <input type="file" onChange={handleFileChange} className="hidden" id="fileInput" />

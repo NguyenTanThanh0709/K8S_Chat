@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { resetGroupUnreadCountController, createGroupController, getUserGroupsController,removeGroupMemberController, getGroupMembersHandler, addMembersToGroupController, updateGroupLastMessageController} from "../controllers/group";
+import { updateGroupInfoController, resetGroupUnreadCountController, createGroupController, getUserGroupsController,removeGroupMemberController, getGroupMembersHandler, addMembersToGroupController, updateGroupLastMessageController} from "../controllers/group";
 
 const routerGroup: Router = Router();
 
@@ -31,4 +31,8 @@ routerGroup.delete('/group/member/:groupId/:userPhone', (req: Request, res: Resp
     removeGroupMemberController(req, res).catch(next);
 });
 
+// ⚡ Sửa chỗ này: đồng bộ cách viết với các route khác
+routerGroup.patch("/group/:groupId", (req: Request, res: Response, next: NextFunction) => {
+  updateGroupInfoController(req, res).catch(next);
+});
 export default routerGroup;

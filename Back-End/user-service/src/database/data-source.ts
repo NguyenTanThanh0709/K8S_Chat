@@ -5,6 +5,7 @@ import { Friend } from "./entities/FriendEntity";
 import { Group } from "./entities/GroupEntity";
 import { GroupMember } from "./entities/GroupMemberEntity";
 import { Report } from "./entities/ReportEntity";
+import { UserSession } from "./entities/UserSession";
 
 dotenv.config();
 
@@ -17,7 +18,7 @@ export const AppDataSource = new DataSource({
   database: process.env.DB_DATABASE || "user",
   logging: ["query"],
   synchronize: false,
-  entities: [User, Friend, Group, GroupMember, Report],
+  entities: [User, Friend, Group, GroupMember, UserSession, Report],
   subscribers: [],
   migrations: ["src/database/migrations/*.ts"],
 });

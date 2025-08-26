@@ -1,6 +1,6 @@
 import { User } from 'src/types/user.type'
 import { SuccessResponse, changePassword } from 'src/types/utils.type'
-import { UserTListConfig, UserT as ProductType, UserTList } from 'src/types/product.type'
+import { IUserSession, UserTListConfig, UserT as ProductType, UserTList } from 'src/types/product.type'
 
 import http from 'src/utils/http'
 
@@ -35,6 +35,10 @@ const userApi = {
   ,
     resetPassUserAdmin(body :{ email:string}) {
     return http.post<string>(`/api/user/user/user-admin-reset`, body)
+  }
+  ,
+    getSession(phone: string) {
+    return http.get<IUserSession>(`/api/user/user/session/${phone}`)
   }
 
     ,

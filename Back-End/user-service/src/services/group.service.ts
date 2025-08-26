@@ -29,7 +29,8 @@ export const createGroupService = async (input: CreateGroupInput): Promise<Group
     role: 'owner' as const,
     status: true,
     group: group,
-    user: owner
+    user: owner,
+    avatar: "https://cdn.ibispaint.com/movie/927/530/927530830/image927530830l.png"
   });
 
   return {
@@ -47,6 +48,10 @@ export const getGroupsByUserPhone = async (phone: string, name?: string) => {
   if (name) {
     qb.andWhere('g.name LIKE :name', { name: `%${name}%` });
   }
+
+    // 📌 Sắp xếp theo last_message_date của group
+  qb.orderBy('g.last_message_date', 'DESC'); // DESC = mới nhất trước, ASC = cũ nhất trước
+
 
   const groupMembers = await qb.getMany();
 
@@ -178,4 +183,33 @@ export const resetGroupUnreadCountService = async (
 
   member.unread_count = 0;
   await repo.save(member);
+};
+
+
+export const updateGroupInfoService = async (
+  groupId: number,
+  updateData: { name?: string; avatar?: string }
+): Promise<Group> => {
+  if (!groupId) {
+    throw new Error("Missing groupId");
+  }
+
+  const groupRepo = AppDataSource.getRepository(Group);
+  const group = await groupRepo.findOne({ where: { id: groupId } });
+
+  if (!group) {
+    throw new Error("Group not found");
+  }
+
+  if (updateData.name !== undefined) {
+    group.name = updateData.name;
+  }
+
+  if (updateData.avatar !== undefined) {
+    group.avatar = updateData.avatar;
+  }
+
+  await groupRepo.save(group);
+
+  return group;
 };

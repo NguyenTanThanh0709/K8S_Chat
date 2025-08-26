@@ -37,6 +37,9 @@ const messageSchema = new Schema<IMessage & Document>({
   sdpMLineIndex: { type: String },
   avt: { type: String },
   name: { type: String },
+    // NEW 👇
+  deleted_by: { type: [String], default: [] },
+  is_recalled: { type: Boolean, default: false }, // đánh dấu đã thu hồi
 });
 
 // Tạo chỉ mục cho các trường cần tối ưu truy vấn

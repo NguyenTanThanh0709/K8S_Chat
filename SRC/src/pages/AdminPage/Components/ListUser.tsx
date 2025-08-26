@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import userApi from "src/apis/user.api";
 import GroupApi from "src/apis/group.api";
-import { UserTListConfig, UserT } from "src/types/product.type";
+import { UserTListConfig, UserT, IUserSession } from "src/types/product.type";
 import { GroupReponse } from "src/types/user.type"
 import { Eye, Lock, Unlock, RefreshCw, Users } from "lucide-react";
 import Modal from "./Modal"; // modal thuần Tailwind
@@ -21,7 +21,7 @@ export default function ListUser() {
   // state phân trang & search
   const [queryConfig, setQueryConfig] = useState<UserTListConfig>({
     page: 1,
-    limit: 2,
+    limit: 10,
     name: "",
   });
 
@@ -55,6 +55,22 @@ useEffect(() => {
     })
     .finally(() => setLoading(false))
 }, [selectedUser])
+
+const [sessions, setSessions] = useState<IUserSession[]>([])
+const [loadingSessions, setLoadingSessions] = useState(false)
+
+useEffect(() => {
+  if (openModal === "loginInfo" && selectedUser?.phone) {
+    setLoadingSessions(true)
+    userApi.getSession(selectedUser.phone)
+      .then((res) => {
+        // API đang trả về IUserSession (nên sửa thành IUserSession[] trong userApi để lấy list)
+        const data = Array.isArray(res.data) ? res.data : [res.data]
+        setSessions(data)
+      })
+      .finally(() => setLoadingSessions(false))
+  }
+}, [openModal, selectedUser])
 
 
   return (
@@ -259,15 +275,58 @@ useEffect(() => {
   </div>
 )}
 
-        {openModal === "loginInfo" && (
-          <div>
-            <p>Lịch sử login của <b>{selectedUser?.name}</b></p>
-            <ul className="list-disc pl-6 mt-2 text-sm">
-              <li>2025-08-15: 10:00</li>
-              <li>2025-08-16: 14:30</li>
-            </ul>
+{openModal === "loginInfo" && (
+  <div className="space-y-3">
+    <p className="text-base font-medium">
+      Lịch sử đăng nhập của <b>{selectedUser?.name}</b>
+    </p>
+
+    {loadingSessions ? (
+      <p className="text-gray-500 text-sm">Đang tải...</p>
+    ) : sessions.length > 0 ? (
+      <div className="divide-y border rounded-md bg-white shadow-sm">
+        {sessions.map((s) => (
+          <div
+            key={s.id}
+            className="flex items-center justify-between p-3 hover:bg-gray-50 transition"
+          >
+            {/* Bên trái: Thông tin login */}
+            <div className="flex flex-col text-sm">
+              <span>
+                <b>Đăng nhập:</b>{" "}
+                {new Date(s.loginAt).toLocaleString("vi-VN")}
+              </span>
+              <span>
+                <b>Đăng xuất:</b>{" "}
+                {s.logoutAt
+                  ? new Date(s.logoutAt).toLocaleString("vi-VN")
+                  : "Chưa đăng xuất"}
+              </span>
+              <span className="text-xs text-gray-500">
+                {s.ipAddress || "IP không rõ"} -{" "}
+                {s.userAgent ? s.userAgent.slice(0, 30) + "..." : "Thiết bị không rõ"}
+              </span>
+            </div>
+
+            {/* Bên phải: trạng thái */}
+            <span
+              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                s.status === "ONLINE"
+                  ? "bg-green-100 text-green-600"
+                  : "bg-gray-100 text-gray-600"
+              }`}
+            >
+              {s.status}
+            </span>
           </div>
-        )}
+        ))}
+      </div>
+    ) : (
+      <p className="text-gray-500 text-sm">Không có phiên đăng nhập nào</p>
+    )}
+  </div>
+)}
+
 
 {openModal === "lock" && (
   <div>
@@ -297,23 +356,58 @@ useEffect(() => {
   </div>
 )}
 
-
 {openModal === "groups" && (
-  <div>
-    <p>Nhóm của <b>{selectedUser?.name}</b></p>
+  <div className="space-y-3">
+    <p className="text-base font-medium">
+      Nhóm của <b>{selectedUser?.name}</b>
+    </p>
 
-    {/* danh sách nhóm */}
-    <ul className="list-disc pl-6 mt-2 text-sm">
-      {groups.length > 0 ? (
-        groups.map((group) => (
-          <li key={group.id}>{group.name}</li>
-        ))
-      ) : (
-        <li>Không có nhóm nào</li>
-      )}
-    </ul>
+    {groups.length > 0 ? (
+      <div className="space-y-2">
+        {groups.map((group) => (
+          <div
+            key={group.id}
+            className="flex items-center gap-3 p-3 rounded-xl border bg-white shadow-sm hover:shadow-md transition"
+          >
+            {/* Avatar nhóm */}
+            <img
+              src={group.avatar || "/default-group.png"}
+              alt={group.name}
+              className="w-10 h-10 rounded-full object-cover"
+            />
+
+            {/* Nội dung nhóm */}
+            <div className="flex-1">
+              <p className="font-medium text-sm">{group.name}</p>
+              <p className="text-xs text-gray-500 truncate">
+                {group.last_message || "Chưa có tin nhắn"}
+              </p>
+            </div>
+
+            {/* Info bên phải */}
+            <div className="flex flex-col items-end text-xs text-gray-400">
+              <span>
+                {new Date(group.last_message_date).toLocaleDateString("vi-VN", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                })}
+              </span>
+              {group.unread_count > 0 && (
+                <span className="mt-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  {group.unread_count}
+                </span>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    ) : (
+      <p className="text-sm text-gray-500">Không có nhóm nào</p>
+    )}
   </div>
 )}
+
       </Modal>
     </div>
   );

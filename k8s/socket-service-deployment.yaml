@@ -6,10 +6,10 @@ metadata:
 spec:
   replicas: 2
   strategy:
-    type: RollingUpdate
+    type: RollingUpdate # Kubernetes sẽ từng bước xóa pod cũ và tạo pod mới, thay vì xóa tất cả cùng một lúc.
     rollingUpdate:
-      maxUnavailable: 0       # Không cho phép pod nào bị unavailable
-      maxSurge: 1            # Cho phép tạo tối đa 1 pod mới trước khi xóa pod cũ
+      maxUnavailable: 0       #  Không cho phép pod nào bị unavailable (0 cho phép pod nào dùng) (2 thì cho phép 2 pod dừng)
+      maxSurge: 1            # Cho phép tạo tối đa 1 pod mới trước khi xóa pod cũ (0 nghĩa là không tạo thêm pod mới trước khi xóa pod cũ)
   selector:
     matchLabels:
       app: socket-service
@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: socket-service
-          image: nguyentanthanh0709/socket-service:latest
+          image: nguyentanthanh0709/socket-service:v1.0.0
           imagePullPolicy: Always
           ports:
             - containerPort: 8182
@@ -47,11 +47,11 @@ spec:
             httpGet:
               path: /api/socket
               port: 8182
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 2
-            successThreshold: 1
-            failureThreshold: 3
+            initialDelaySeconds: 5 # chờ 5 giây sau khi container khởi động trước khi bắt đầu probe.
+            periodSeconds: 5      # probe lặp lại mỗi 5 giây
+            timeoutSeconds: 2.    # nếu không có phản hồi trong 2 giây → coi là probe thất bại.
+            successThreshold: 1.  #.  cần 1 lần thành công liên tiếp để coi là "ready".
+            failureThreshold: 3.   # thất bại 3 lần liên tiếp → coi pod chưa ready
           livenessProbe:
             httpGet:
               path: /api/socket
@@ -90,11 +90,10 @@ spec:
       port: 80
       targetPort: 8182
 
-
 ---
 
 apiVersion: policy/v1
-kind: PodDisruptionBudget
+kind: PodDisruptionBudget    # Đây là resource dùng để bảo vệ số lượng Pod tối thiểu chạy.
 metadata:
   name: socket-service-pdb
   namespace: microservices

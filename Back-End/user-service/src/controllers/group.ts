@@ -9,7 +9,8 @@ import {
     addMembersToGroup,
     removeMemberFromGroup,
     updateGroupLastMessageService,
-    resetGroupUnreadCountService
+    resetGroupUnreadCountService,
+    updateGroupInfoService
   } from '../services/group.service';
 
   export const createGroupController = async (req: Request, res: Response) => {
@@ -134,3 +135,21 @@ export const resetGroupUnreadCountController = async (req: Request, res: Respons
   }
 };
 
+
+
+
+export const updateGroupInfoController = async (req: Request, res: Response) => {
+  try {
+    const groupId = Number(req.params.groupId);
+    const { name, avatar } = req.body;
+
+    const updatedGroup = await updateGroupInfoService(groupId, { name, avatar });
+
+    return res.json("Update thành công");
+  } catch (error: any) {
+    return res.status(400).json({
+      success: false,
+      message: error.message || "Failed to update group info",
+    });
+  }
+};

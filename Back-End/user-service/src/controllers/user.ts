@@ -17,6 +17,9 @@ import {
   addReportService,
   getReportsByDateService,
   updateReportStatusService,
+  createUserSessionService,
+  logoutUserSessionService,
+  getUserSessionsService
 } from '../services/user.service';
 
 
@@ -294,5 +297,39 @@ export const updateReportStatusController = async (req: Request, res: Response) 
     res.json(report);
   } catch (error: any) {
     res.status(400).json({ message: error.message });
+  }
+};
+
+// Tạo session khi login
+export const createUserSession = async (req: Request, res: Response) => {
+  try {
+    const { userPhone, ipAddress, userAgent } = req.body;
+    const session = await createUserSessionService(userPhone, "2001:4860:7:812::e9", "Mozilla/5.0 (platform; rv:gecko-version) Gecko/gecko-trail Firefox/firefox-version");
+    res.json(session);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+// Logout session
+export const logoutUserSession = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const session = await logoutUserSessionService(Number(id));
+    res.json(session);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+};
+
+
+// Lấy danh sách session theo user
+export const getUserSessions = async (req: Request, res: Response) => {
+  try {
+    const { userPhone } = req.params;
+    const sessions = await getUserSessionsService(userPhone);
+    res.json(sessions);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
   }
 };

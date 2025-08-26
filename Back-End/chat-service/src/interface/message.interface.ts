@@ -18,5 +18,7 @@ export interface IMessage {
     sdpMLineIndex?: number;
     avt?: string;
     name?: string
+    deleted_by? : string[],
+    is_recalled?: Boolean
   }
   

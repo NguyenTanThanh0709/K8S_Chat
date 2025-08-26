@@ -21,6 +21,18 @@ export interface UserTList {
   }
 }
 
+export interface IUserSession {
+  id: string; // hoặc number nếu id là number
+  user_phone: string;
+  userAgent: string;
+  ipAddress: string;
+  user_agent: string;
+  status:string;
+  loginAt: Date;
+  logoutAt?: Date | null;
+}
+
+
 export interface UserTListConfig {
   page?: number | string
   limit?: number | string

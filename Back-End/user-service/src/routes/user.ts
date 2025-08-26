@@ -5,6 +5,9 @@ import {
   addReportController,
   getReportsByDateController,
   updateReportStatusController,
+  createUserSession,
+logoutUserSession,
+getUserSessions
 } from "../controllers/user";
 
 const router: Router = Router();
@@ -64,6 +67,23 @@ router.get("/report/date/:date", (req: Request, res: Response, next: NextFunctio
 router.patch("/report/:id/status", (req: Request, res: Response, next: NextFunction) => {
   updateReportStatusController(req, res).catch(next);
 });
+
+
+// Tạo session khi user login
+router.post("/session", (req: Request, res: Response, next: NextFunction) => {
+  createUserSession(req, res).catch(next);
+});
+
+// Logout session
+router.put("session/:id/logout", (req: Request, res: Response, next: NextFunction) => {
+  logoutUserSession(req, res).catch(next);
+});
+
+// Lấy danh sách session của 1 user theo phone
+router.get("/session/:userPhone", (req: Request, res: Response, next: NextFunction) => {
+  getUserSessions(req, res).catch(next);
+});
+
 
 
 export default router;

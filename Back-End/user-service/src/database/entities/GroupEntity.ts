@@ -12,6 +12,9 @@
     @Column({ type: "varchar", length: 100 })
     owner_phone: string;
 
+    @Column({ type: "text", nullable: true })
+    avatar: string | null;
+
     @CreateDateColumn({ type: "datetime", precision: 3, nullable: true, default: () => "CURRENT_TIMESTAMP(3)" })
     created_at: Date;
 

@@ -17,6 +17,10 @@ import Popover from 'src/components/Popover'
 import { useMessages } from 'src/contexts/MessagesContext'
 import { GetMessagesQuery } from 'src/types/utils.type'
 import { MdGroupAdd, MdSettings, MdPeopleAlt, MdPersonAdd, MdExitToApp } from 'react-icons/md'
+import { v4 as uuidv4 } from "uuid"; // npm install uuid
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import InputFile from 'src/components/InputFile'
+import { storage } from 'src/configs/firebase';
 
 
 interface AsideFilterMessageProps {
@@ -104,6 +108,7 @@ export default function AsideFilterMessageGroup({ selectedCategory, isScreenSM, 
   const [isModalOpenAddPeople, setIsModalOpenAddPeople] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
 
+  const [file, setFile] = useState<File>()
 
   const { data: groupMembers, isLoading, isError } = useQuery(
     ['groupMembers', selectedGroupId],
@@ -164,7 +169,7 @@ export default function AsideFilterMessageGroup({ selectedCategory, isScreenSM, 
     setMessagesData(data); // Sử dụng context để lưu dữ liệu
     setUserData(null)
     setGroupResponse(group)
-    if (isScreenSM){
+    if (isScreenSM) {
       setIsChatBox(true)
     }
   };
@@ -227,8 +232,108 @@ export default function AsideFilterMessageGroup({ selectedCategory, isScreenSM, 
     }
   };
 
+  const handleRemoveMember = async (groupId: string, user_phone: string) => {
+    if (!user_phone) return; // Ensure the user has a phone number
+
+    try {
+      // Call the API to remove the member from the group
+      const response = await GroupApi.removeMembersFromGroup(groupId, user_phone);
+
+      setSelectedGroupId(null);
+      setIsModalOpen(false);
+
+      if (response.data == 'Failed') {
+        toast.warning('Bạn là chủ nhóm nên không thể rời!');
+      } else {
+        toast.success('Đã rời nhóm thành công!');
+      }
+
+      // Optionally, display success message
+      console.log('Successfully left the group');
+    } catch (error) {
+      console.error('Error leaving group:', error);
+    }
+  };
+
 
   const isOnline = true
+  const [isModalRename, setIsModalRename] = useState(false);
+  const [isModalChangeAvatar, setIsModalChangeAvatar] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+
+  const handleOpenRename = (groupId: string, currentName: string) => {
+    setSelectedGroupId(groupId);
+    setNewGroupName(currentName);
+    setIsModalRename(true);
+  };
+
+  const handleOpenChangeAvatar = (groupId: string) => {
+    setSelectedGroupId(groupId);
+    setIsModalChangeAvatar(true);
+  };
+
+  const handleRenameGroup = async () => {
+    if (!selectedGroupId || !newGroupName.trim()) return;
+    try {
+      await GroupApi.updateGroup(selectedGroupId, { name: newGroupName });
+      toast.success('Đổi tên nhóm thành công!');
+      queryClient.invalidateQueries(['groupList', phone]);
+      setIsModalRename(false);
+    } catch (err) {
+      toast.error('Lỗi khi đổi tên nhóm');
+    }
+  };
+
+  const handleChangeAvatar = async () => {
+    if (!selectedGroupId || !file) return;
+    try {
+      // Upload avatar (có thể cần API upload riêng)
+      const formData = new FormData();
+      formData.append('avatar', file);
+      // await GroupApi.updateGroupInfo(selectedGroupId, { avatar: 'link-upload' }); // TODO: thay link từ API upload
+      await GroupApi.updateGroup(selectedGroupId, { avatar: avatarName });
+      toast.success('Đổi avatar thành công!');
+      queryClient.invalidateQueries(['groupList', phone]);
+      setIsModalChangeAvatar(false);
+    } catch (err) {
+      toast.error('Lỗi khi đổi avatar nhóm');
+    }
+  };
+
+  const [avatarName, setAvatarName] = useState<string>()
+
+  const handleChangeFile = (file?: File | undefined) => {
+    setFile(file)
+    if (file) {
+      handleUpload(file)
+    }
+  }
+
+  const handleUpload = async (file: File) => {
+    if (file) {
+      const uniqueId = uuidv4();
+
+      try {
+        const storageRef = ref(storage, `images/${uniqueId}_${file.name}`);
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+
+        alert('File uploaded successfully!');
+        // setImagePreviews([downloadURL]); // Vì chỉ 1 file, dùng mảng có 1 phần tử
+        setAvatarName(downloadURL)
+        return downloadURL;
+      } catch (error) {
+        console.error('Error uploading file:', error);
+        alert('Error uploading file.');
+        return null;
+      } finally {
+        // setLoading(false);
+      }
+    } else {
+      alert('No file selected.');
+      return null;
+    }
+  };
 
 
   return (
@@ -319,21 +424,33 @@ export default function AsideFilterMessageGroup({ selectedCategory, isScreenSM, 
                               onClick={() => handleShowMembers(group.id)}
                             >
                               <MdPeopleAlt className="text-xl" />
-                              <span>Members</span>
+                              <span>Thành viên</span>
                             </button>
                             <button
                               className='w-full flex items-center gap-2 px-3 py-1 text-left text-sm hover:bg-gray-100 rounded'
                               onClick={() => handleShowAddMembers(group.id)}
                             >
                               <MdPersonAdd className="text-xl" />
-                              <span>Add People</span>
+                              <span>Thêm Thành viên</span>
                             </button>
                             <button
                               className='w-full flex items-center gap-2 px-3 py-1 text-left text-sm text-red-600 hover:bg-gray-100 rounded'
                               onClick={() => handleLeaveGroup(group.id)}
                             >
                               <MdExitToApp className="text-xl" />
-                              <span>Leave Group</span>
+                              <span>Rời nhóm</span>
+                            </button>
+                            <button
+                              className='w-full flex items-center gap-2 px-3 py-1 text-left text-sm hover:bg-gray-100 rounded'
+                              onClick={() => handleOpenRename(group.id, group.name)}
+                            >
+                              ✏️ <span>Đổi tên nhóm</span>
+                            </button>
+                            <button
+                              className='w-full flex items-center gap-2 px-3 py-1 text-left text-sm hover:bg-gray-100 rounded'
+                              onClick={() => handleOpenChangeAvatar(group.id)}
+                            >
+                              🖼️ <span>Đổi ảnh nhóm</span>
                             </button>
                           </div>
                         }
@@ -344,7 +461,7 @@ export default function AsideFilterMessageGroup({ selectedCategory, isScreenSM, 
                     </div>
                     <div className='relative'>
                       <img
-                        src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSv3M0Sh0_j1xRyDkQLmq_bxgY0cwK9mchj5A&s"
+                        src={group.avatar}
                         alt='user-avatar'
                         className='h-10 w-10 rounded-full object-cover border-2 border-white shadow-sm'
                       />
@@ -382,7 +499,7 @@ export default function AsideFilterMessageGroup({ selectedCategory, isScreenSM, 
         <div className=' flex  justify-center items-center bg-black bg-opacity-20'>
           <div className='p-4 rounded-md w-80'>
             <div className='flex justify-between'>
-              <h3 className='text-lg font-semibold'>Group Members</h3>
+              <h3 className='text-lg font-semibold'>Danh sách thành viên</h3>
               <button onClick={handleCloseModal} className='text-gray-500'>❌</button>
             </div>
             {isLoading ? (
@@ -406,6 +523,16 @@ export default function AsideFilterMessageGroup({ selectedCategory, isScreenSM, 
                       <div className='text-sm text-gray-500'>{member.role}</div>
                       <div className='text-xs text-gray-400 mt-1'>{`Joined: ${moment(member.joined_at).format('DD/MM/YYYY')}`}</div>
                     </div>
+                    {profileDataLS?.phone != member?.user_phone && member.role != 'owner' && (
+                      <button
+                        onClick={() => handleRemoveMember(selectedGroupId as string, member.user_phone)}
+                        className='ml-2 text-red-500 hover:text-red-700'
+                        title='Xóa khỏi nhóm'
+                      >
+                        👨‍👩‍👧‍👦
+                      </button>
+
+                    )}
                   </li>
 
 
@@ -457,6 +584,44 @@ export default function AsideFilterMessageGroup({ selectedCategory, isScreenSM, 
         </div>
       )}
 
+      {isModalRename && (
+        <div className='flex  justify-center items-center border'>
+          <div className='bg-white p-4 rounded-lg w-80'>
+            <h3 className='font-semibold mb-2'>Đổi tên nhóm</h3>
+            <input
+              type='text'
+              value={newGroupName}
+              onChange={(e) => setNewGroupName(e.target.value)}
+              className='w-full border rounded p-2 mb-3'
+            />
+            <div className='flex justify-end gap-2'>
+              <button onClick={() => setIsModalRename(false)} className='px-3 py-1 border rounded'>Hủy</button>
+              <button onClick={handleRenameGroup} className='px-3 py-1 bg-orange text-white rounded'>Lưu</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {isModalChangeAvatar && (
+        <div className='flex  justify-center items-center border'>
+          <div className='bg-white p-4 rounded-lg w-80'>
+            <h3 className='font-semibold mb-2'>Đổi ảnh nhóm</h3>
+            <InputFile onChange={handleChangeFile} />
+            {file && (
+              <img
+                src={URL.createObjectURL(file)}
+                alt='preview'
+                className='w-20 h-20 object-cover rounded-full mb-3'
+              />
+            )}
+            <div className='flex justify-end gap-2'>
+              <button onClick={() => setIsModalChangeAvatar(false)} className='px-3 py-1 border rounded'>Hủy</button>
+              <button onClick={handleChangeAvatar} className='px-3 py-1 bg-orange text-white rounded'>Lưu</button>
+            </div>
+          </div>
+        </div>
+      )}
 
 
     </div>

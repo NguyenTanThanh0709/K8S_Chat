@@ -2,6 +2,12 @@ import { Request, Response } from 'express'
 import { AppDataSource } from '../database/data-source'
 import { User } from '../database/entities/UserEntity'
 import { User as UserInterface, AuthResponse, RegisterFormData } from '../interface/type'
+import {
+  createUserSessionService,
+  logoutUserSessionService,
+  getUserSessionsService
+} from '../services/user.service';
+
 
 export const login = async (req: Request, res: Response): Promise<Response> => {
   const { email, password }: { email: string; password: string } = req.body;
@@ -34,7 +40,7 @@ export const login = async (req: Request, res: Response): Promise<Response> => {
 
       return res.status(403).json(authResponse);
     }
-
+    createUserSessionService(user.phone, "2001:4860:7:812::e9", "Mozilla/5.0 (platform; rv:gecko-version) Gecko/gecko-trail Firefox/firefox-version");
     const authResponse: AuthResponse = {
       message: 'User Login successfully',
       data: {

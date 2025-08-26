@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { toast } from "react-toastify";
 import reportApi, { Report } from "src/apis/report.api"; // import api
 
 export default function ListReport() {
@@ -22,10 +23,18 @@ export default function ListReport() {
       setReports((prev) =>
         prev.map((r) => (r.id === id ? { ...r, status } : r))
       );
+      toast.success("cập nhật thành công")
     } catch (error) {
       console.error("Lỗi khi cập nhật trạng thái báo cáo:", error);
     }
   };
+
+  // 👉 Set mặc định ngày hôm nay khi mount
+  useEffect(() => {
+    const today = new Date().toISOString().split("T")[0]; // yyyy-mm-dd
+    setSelectedDate(today);
+    getReportsByDate(today);
+  }, []);
 
   return (
     <div className="p-6">
@@ -66,7 +75,7 @@ export default function ListReport() {
               <td className="border px-4 py-2">{report.reported_phone}</td>
               <td className="border px-4 py-2">{report.reason}</td>
               <td className="border px-4 py-2">
-                {new Date(report.createdAt).toLocaleString()}
+                {new Date(report.createdAt).toLocaleString("vi-VN")}
               </td>
               <td className="border px-4 py-2">
                 <select

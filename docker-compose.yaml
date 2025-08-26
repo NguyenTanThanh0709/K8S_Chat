@@ -39,7 +39,7 @@
         MYSQL_DATABASE: user
       volumes:
         - ./docker/mysql:/var/lib/mysql
-        - ./DB:/docker-entrypoint-initdb.d/init.sql
+        - ./DB/init.sql:/docker-entrypoint-initdb.d/init.sql
       networks:
         - bookie
       ports:

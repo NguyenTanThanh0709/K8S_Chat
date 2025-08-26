@@ -23,7 +23,8 @@ export interface GroupReponse {
   created_at: string
   last_message: string
   last_message_date: string
-  unread_count:number
+  unread_count:number,
+  avatar:string
 }
 
 export interface Group {
