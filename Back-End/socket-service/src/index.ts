@@ -24,7 +24,7 @@ async function bootstrap() {
 
   app.get("/api/socket", (req, res) => {
   res.status(200).json({
-    message: "version test zerodowtime"
+    message: "version test zerodowtime - test new ver .............."
   });
 });
 
