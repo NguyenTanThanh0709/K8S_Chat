@@ -47,18 +47,18 @@ spec:
             httpGet:
               path: /api/socket
               port: 8182
-            initialDelaySeconds: 5 # chờ 5 giây sau khi container khởi động trước khi bắt đầu probe.
-            periodSeconds: 5      # probe lặp lại mỗi 5 giây
+            initialDelaySeconds: 20 # chờ 5 giây sau khi container khởi động trước khi bắt đầu probe.
+            periodSeconds: 40      # probe lặp lại mỗi 5 giây
             timeoutSeconds: 2.    # nếu không có phản hồi trong 2 giây → coi là probe thất bại.
-            successThreshold: 1.  #.  cần 1 lần thành công liên tiếp để coi là "ready".
-            failureThreshold: 3.   # thất bại 3 lần liên tiếp → coi pod chưa ready
+            successThreshold: 1  #.  cần 1 lần thành công liên tiếp để coi là "ready".
+            failureThreshold: 3   # thất bại 3 lần liên tiếp → coi pod chưa ready
           livenessProbe:
             httpGet:
               path: /api/socket
               port: 8182
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 2
+            initialDelaySeconds: 30
+            periodSeconds: 90
+            timeoutSeconds: 3
             failureThreshold: 3
           lifecycle:
             postStart:

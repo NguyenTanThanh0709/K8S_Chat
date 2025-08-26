@@ -41,18 +41,18 @@ spec:
             httpGet:
               path: /api/chat
               port: 8181
-            initialDelaySeconds: 5
-            periodSeconds: 5
-            timeoutSeconds: 2
+            initialDelaySeconds: 20
+            periodSeconds: 55
+            timeoutSeconds: 3
             successThreshold: 1
             failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /api/chat
               port: 8181
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 2
+            initialDelaySeconds: 30
+            periodSeconds: 70
+            timeoutSeconds: 3
             failureThreshold: 3
           lifecycle:
             postStart:
@@ -63,11 +63,11 @@ spec:
                 command: ["/bin/sh", "-c", "echo 'Container stopping...' && sleep 5"]
           resources:
               limits:
+                memory: 512Mi
+                cpu: 300m
+              requests:
                 memory: 256Mi
                 cpu: 200m
-              requests:
-                memory: 128Mi
-                cpu: 100m
 
 ---
 
