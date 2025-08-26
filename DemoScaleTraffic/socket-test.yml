@@ -1,23 +1,23 @@
 config:
-  target: "http://localhost:8182"
+  target: "http://localhost"
   phases:
-    - duration: 60
-      arrivalRate: 100
-      rampTo: 1000
+    - duration: 180
+      arrivalRate: 50
+      rampTo: 500
   engines:
     socketio: {}
   socketio:
     transports: ["websocket"]
     path: "/api/socket"
     query:
-      userId: "0333657671"
+      userId: "0900000049"
 
 scenarios:
   - name: "Socket.IO stress test"
     engine: socketio
     flow:
       - emit:
-          channel: "sendMessage"
+          channel: "sendMessage"`
           data:
             sender: "0900000049"
             receiver: "0900000050"
@@ -27,7 +27,8 @@ scenarios:
             name: "ABC"
             avt: "https://img.tripi.vn/cdn-cgi/image/width=700,height=700/https://gcs.tripi.vn/public-tripi/tripi-feed/img/482752AXp/anh-mo-ta.png"
           ack: false
-      - think: 1
+      - think: 2
+
       - loop:
           - emit:
               channel: "sendMessage"
@@ -39,5 +40,6 @@ scenarios:
                 text: "Ping from 0900000049 - 0900000050"
                 name: "ABC"
                 avt: "https://img.tripi.vn/cdn-cgi/image/width=700,height=700/https://gcs.tripi.vn/public-tripi/tripi-feed/img/482752AXp/anh-mo-ta.png"
-          - think: 1
-        count: 10
+              ack: false
+          - think: 2
+        count: 20

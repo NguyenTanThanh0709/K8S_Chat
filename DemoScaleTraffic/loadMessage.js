@@ -6,7 +6,7 @@ export const options = {
     { duration: '10s', target: 200 },  // trong 10s đầu, tăng từ 0 → 200 user
     { duration: '20s', target: 500 },  // trong 20s tiếp theo, tăng lên 500 user
     { duration: '30s', target: 1000 }, // giữ ổn định ở 1000 user trong 30s
-    { duration: '30s', target: 2000 }, // giữ ổn định ở 2000 user trong 30s
+    { duration: '30s', target: 2200 }, // giữ ổn định ở 2200 user trong 30s
     { duration: '10s', target: 0 },    // giảm dần từ 1000 → 0 user trong 10s
   ],
 };

@@ -36,12 +36,12 @@ const browser = await puppeteer.launch({
 
 (async () => {
   const users = 5; // số client fake cho mỗi receiver
-  const receiverIds = [20]; // 4 nhóm khác nhau
+  const receiverIds = Array.from({ length: 50 }, (_, i) => i + 1); // 50 nhóm khác nhau
 
   for (const rid of receiverIds) {
     for (let i = 0; i < users; i++) {
       launchUser(i, rid); // không await để mở song song
-      await sleep(1000);
+      await sleep(1500);
     }
   }
 })();

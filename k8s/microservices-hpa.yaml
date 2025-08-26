@@ -29,13 +29,13 @@ spec:
         name: cpu
         target:
           type: Utilization
-          averageUtilization: 55
+          averageUtilization: 50
     - type: Resource
       resource:
         name: memory
         target:
           type: Utilization
-          averageUtilization: 50   # scale nếu RAM > 70%
+          averageUtilization: 50   # scale nếu RAM >40%
 
 ---
 
