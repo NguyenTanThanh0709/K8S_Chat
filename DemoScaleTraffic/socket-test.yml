@@ -17,7 +17,7 @@ scenarios:
     engine: socketio
     flow:
       - emit:
-          channel: "sendMessage"`
+          channel: "sendMessage"
           data:
             sender: "0900000049"
             receiver: "0900000050"

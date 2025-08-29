@@ -56,6 +56,7 @@ const UserP = () => {
       })
 
       toast.success(res.data)
+      navigate(`/profile/${phone}/false`)
     } catch (error) {
       console.error(error)
       toast.error((error as any)?.response?.data?.message || 'Lỗi hủy kết bạn')
@@ -78,6 +79,7 @@ const UserP = () => {
       })
 
       toast.success(res.data)
+      navigate('/')
     } catch (error) {
       console.error(error)
       toast.error((error as any)?.response?.data?.message || 'Lỗi Block người dùng')
@@ -100,6 +102,7 @@ const UserP = () => {
       }
       // Có thể cập nhật lại UI ở đây, ví dụ:
       // refetchFriendList()
+      navigate(`/profile/${phone}/true`) 
     } catch (error) {
       console.error(error)
       toast.error((error as any)?.response?.data?.message || 'Lỗi gửi lời mời kết bạn')

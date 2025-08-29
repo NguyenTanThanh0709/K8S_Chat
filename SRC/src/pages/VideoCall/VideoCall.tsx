@@ -58,6 +58,8 @@ const VideoCall: React.FC = () => {
   const isGroup = searchParams.get("isGroup") === "1";
   const type = searchParams.get("type");
   const [userId] = useState("user-" + Math.floor(Math.random() * 1000));
+  const [remoteUsers, setRemoteUsers] = useState<Record<string, string>>({});
+
 
   const { data: profileDataLS, refetch } = useQuery<User>({
     queryKey: ['profile'],
@@ -95,6 +97,7 @@ const VideoCall: React.FC = () => {
     init();
 
     socket.on("new-peer", async ({ socketId }) => {
+      setRemoteUsers((prev) => ({ ...prev, [socketId]: userId }));
       const pc = new RTCPeerConnection(ICE_SERVERS);
       peerConnections.current[socketId] = pc;
 
@@ -158,6 +161,11 @@ const VideoCall: React.FC = () => {
         delete copy[socketId];
         return copy;
       });
+    setRemoteUsers((prev) => {
+      const copy = { ...prev };
+      delete copy[socketId];
+      return copy;
+    });
     });
 
 
@@ -255,6 +263,7 @@ const VideoCall: React.FC = () => {
 
     if (count === 1) {
       // 1 video: full screen
+      const [peerId, stream] = entries[0]; 
       return (
         <div className="w-full h-full">
           <video
@@ -263,9 +272,10 @@ const VideoCall: React.FC = () => {
             ref={(video) => video && (video.srcObject = entries[0][1])}
             className="w-full h-full object-cover rounded-lg"
           />
-                      <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-              tên người dùng
-            </div>
+<div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+  {remoteUsers[peerId] || "Unknown"}
+</div>
+
         </div>
       );
     }
@@ -281,9 +291,6 @@ const VideoCall: React.FC = () => {
                 ref={(video) => video && (video.srcObject = stream)}
                 className="w-full h-full object-cover"
               />
-                          <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-              tên người dùng
-            </div>
             </div>
           ))}
         </div>
@@ -302,9 +309,6 @@ const VideoCall: React.FC = () => {
                   ref={(video) => video && (video.srcObject = stream)}
                   className="w-full h-full object-cover"
                 />
-                            <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-              tên người dùng
-            </div>
               </div>
             ))}
           </div>
@@ -316,9 +320,6 @@ const VideoCall: React.FC = () => {
                 ref={(video) => video && (video.srcObject = entries[2][1])}
                 className="w-full h-full object-cover"
               />
-                          <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-              tên người dùng
-            </div>
             </div>
           </div>
         </div>
@@ -343,9 +344,6 @@ const VideoCall: React.FC = () => {
               ref={(video) => video && (video.srcObject = stream)}
               className="w-full h-full object-cover"
             />
-            <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-              tên người dùng
-            </div>
           </div>
         ))}
       </div>
