@@ -19,7 +19,8 @@ import {
   updateReportStatusService,
   createUserSessionService,
   logoutUserSessionService,
-  getUserSessionsService
+  getUserSessionsService,
+  forgotPassword
 } from '../services/user.service';
 
 
@@ -248,6 +249,26 @@ export const sendEmailController = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error(error);
     return res.status(500).json({ error: "Failed to send email" });
+  }
+};
+
+export const sendEmailForgotPassController = async (req: Request, res: Response) => {
+  try {
+    const { email, phone } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email is required" });
+    }
+    if (!phone) {
+      return res.status(400).json({ message: "Phone is required" });
+    }
+
+    await forgotPassword(email, phone);
+
+    return res.json({ message: "Password reset email sent successfully" });
+  } catch (error: any) {
+    console.error("Forgot password error:", error);
+    return res.status(500).json({ message: "không tìm thấy người dùng theo yêu cầu" });
   }
 };
 

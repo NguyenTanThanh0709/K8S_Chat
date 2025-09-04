@@ -49,7 +49,22 @@ const messagesApi = {
     // 📌 Lấy media (ảnh/video) liền sau
     getNextMediaMessage(messageId: string) {
         return http1.get<IMessage>(`/api/chat/message/${messageId}/next-media`);
-    }
+    },
+
+// 📌 Sửa lại editMessage
+editMessage(messageId: string, text: string) {
+  return http1.put<IMessage>(`/api/chat/message/${messageId}/edit`, { text });
+},
+
+// Thả reaction
+editAddreactMessage(messageId: string, user: string, userName: string, emoji: string) {
+  return http1.post<IMessage>(`/api/chat/message/${messageId}/react`, { user, userName, emoji });
+},
+// 📌 Sửa lại editMessage
+editRemoveReactMessage(messageId: string, user: string) {
+  return http1.delete<IMessage>(`/api/chat/message/${messageId}/react`, { data: { user } });
+}
+
 
     
 }

@@ -20,5 +20,12 @@ router.post('/from-date', MessageController.getMessagesFromDate);
 router.get("/:id/prev-media", MessageController.getPrevMediaMessage);
 router.get("/:id/next-media", MessageController.getNextMediaMessage);
 
+// 🆕 Sửa tin nhắn (PUT /api/message/:id/edit)
+router.put('/:id/edit', MessageController.editMessage);
+// Thả reaction
+router.post("/:id/react", MessageController.addReaction);
+
+// Gỡ reaction
+router.delete("/:id/react", MessageController.removeReaction);
 
 export default router;

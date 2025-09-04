@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from '@tanstack/react-query';
 import axios from 'axios';
+import { AxiosResponse } from "axios";
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import moment from "moment";
 import { useEffect, useRef, useState } from "react";
@@ -81,6 +82,7 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
     },
   });
   const PhoneSender = profileDataLS?.phone || '';
+  const nameSender = profileDataLS?.name || '';
   const [debouncedReceiver] = useDebounce(messagesData?.receiver, 300);
 
   useEffect(() => {
@@ -653,6 +655,97 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
     }
   };
 
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<IMessage | null>(null);
+  const [editText, setEditText] = useState("");
+
+
+
+  const handleEdit = (msg: IMessage) => {
+    setEditingMessage(msg);
+    setEditText(msg.text || "");
+    setIsEditModalOpen(true);
+  };
+
+
+  const mutationEditMessage = useMutation({
+    mutationFn: ({ id, text }: { id: string; text: string }) =>
+      messagesApi.editMessage(id, text),
+    onSuccess: (res) => {
+      setAllMessages((prev) =>
+        prev.map((m) => (m._id === res.data._id ? res.data : m))
+      );
+      toast.success("Đã sửa tin nhắn");
+      setIsEditModalOpen(false);
+      setEditingMessage(null);
+      setEditText("");
+    },
+    onError: () => {
+      toast.error("Sửa tin nhắn thất bại");
+    },
+  });
+
+const handleReactMessage = async (messageId: string, emoji: string) => {
+  if (!profileDataLS) return;
+  try {
+    // tìm xem user đã react emoji này chưa
+    const message = allMessages.find((m) => m._id === messageId);
+    const hasReacted = message?.reactions?.some(
+      (r) => r.user === profileDataLS.phone && r.emoji === emoji
+    );
+
+    let res: AxiosResponse<IMessage>;
+    if (hasReacted) {
+      // gỡ reaction
+      res = await messagesApi.editRemoveReactMessage(messageId, PhoneSender);
+    } else {
+      // thêm reaction
+      res = await messagesApi.editAddreactMessage(
+        messageId,
+      PhoneSender,
+      nameSender,
+        emoji
+      );
+    }
+
+    // cập nhật state
+    setAllMessages((prev) =>
+      prev.map((m) => (m._id === messageId ? res.data : m))
+    );
+
+    // emit socket để realtime
+    socket?.emit("message:react", res.data);
+  } catch (err) {
+    console.error("React message error:", err);
+    toast.error("Không thể cập nhật reaction");
+  }
+};
+
+const [isThemeOpen, setIsThemeOpen] = useState(false);
+const [theme, setTheme] = useState(() => {
+  return localStorage.getItem("theme") || "light";
+});
+
+const themes = [
+  { id: "light", name: "Sáng", preview: "bg-white border", className: "bg-gray-50 text-gray-800" },
+  { id: "dark", name: "Tối", preview: "bg-gray-900", className: "bg-gray-900 text-green" },
+  { id: "ocean", name: "Xanh biển", preview: "bg-blue-500", className: "bg-blue-100 text-blue-900" },
+  { id: "forest", name: "Xanh lá", preview: "bg-green-500", className: "bg-green-100 text-green-900" },
+];
+
+useEffect(() => {
+  const savedTheme = localStorage.getItem("theme");
+  if (savedTheme) {
+    console.log("Loaded theme:", savedTheme);
+    setTheme(savedTheme);
+  }
+}, []);
+
+useEffect(() => {
+  console.log("Saving theme:", theme);
+  localStorage.setItem("theme", theme);
+}, [theme]);
+
 
   return (
     <div className='flex flex-col bg-white p-4 shadow-md rounded-md border'>
@@ -693,6 +786,14 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
             >
               <MdDelete className="text-2xl text-red-600" />
             </button>
+
+            <button
+  onClick={() => setIsThemeOpen(true)}
+  title="Đổi giao diện"
+  className="hover:bg-purple-100 p-2 rounded-full"
+>
+  🎨
+</button>
 
             <div className="flex items-center gap-3">
               {/* Button tìm kiếm */}
@@ -831,7 +932,8 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
           </div>
         </div>
 
-        <div ref={chatBodyRef} style={{ minHeight: '200px' }} className="flex-1 overflow-y-auto overflow-x-hidden px-4 py-2 space-y-2 bg-gray-50">
+          
+        <div ref={chatBodyRef} style={{ minHeight: '200px' }}   className={`flex-1 overflow-y-auto overflow-x-hidden px-4 py-2 space-y-2 ${themes.find(t => t.id === theme)?.className}`}>
           {loadingMore && <div className="text-center text-sm text-gray-400">Đang tải thêm...</div>}
           {allMessages.map((message, index) => {
             const isOwnMessage = message.sender === PhoneSender;
@@ -872,6 +974,18 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
                                 sameElse: 'DD/MM/YYYY HH:mm:ss',
                               })}
                             </span>
+                            <div className="flex items-center gap-2 mt-2">
+                              {['👍', '❤️', '😂', '😮', '😢', '😡'].map((emoji) => (
+                                <button
+                                  key={emoji}
+                                  onClick={() => handleReactMessage(message._id || "", emoji)}
+                                  className="text-lg hover:scale-125 transition-transform"
+                                >
+                                  {emoji}
+                                </button>
+                              ))}
+                            </div>
+
                             {/* Thêm action menu */}
                             <button
                               onClick={() => handleDeleteForMe(message._id || "")}
@@ -888,6 +1002,15 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
                                 Thu hồi
                               </button>
                             )}
+                            {isOwnMessage && (
+                              <button
+                                onClick={() => handleEdit(message)}
+                                className="text-xs text-green-600 mt-1 hover:underline text-left"
+                              >
+                                Chỉnh sửa tin nhắn
+                              </button>
+                            )}
+
                           </div>
                         </div>
                       }
@@ -978,7 +1101,20 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
 
 
                     </Popover>
-
+                    {/* ✅ SHOW REACTIONS */}
+                    {message.reactions && message.reactions.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {message.reactions.map((reaction, idx) => (
+                          <div
+                            key={idx}
+                            className="px-2 py-1 bg-gray-100 rounded-full text-xs flex items-center gap-1 shadow-sm"
+                          >
+                            <span>{reaction.emoji}</span>
+                            <span className="text-gray-500">{reaction.userName}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1154,6 +1290,78 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
           </button>
         </div>
       )}
+
+      {isEditModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+            <h2 className="text-lg font-semibold mb-4">Chỉnh sửa tin nhắn</h2>
+            <textarea
+              className="w-full border rounded p-2"
+              rows={3}
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+            />
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={() =>
+                  mutationEditMessage.mutate({
+                    id: editingMessage?._id!,
+                    text: editText,
+                  })
+                }
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                Lưu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+{isThemeOpen && (
+  <div
+    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+    onClick={() => setIsThemeOpen(false)}
+  >
+    <div
+      className="bg-white rounded-lg p-4 max-w-md w-full relative"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <h3 className="text-lg font-semibold mb-2">Chọn giao diện</h3>
+      <button
+        onClick={() => setIsThemeOpen(false)}
+        className="absolute top-2 right-2 text-red-500"
+      >
+        ✕
+      </button>
+
+<div className="grid grid-cols-2 gap-4 mt-4">
+  {themes.map((t) => (
+    <button
+      key={t.id}
+      onClick={() => {
+        setTheme(t.id);
+        setIsThemeOpen(false);
+      }}
+      className={`p-4 rounded-lg shadow-md flex flex-col items-center gap-2 ${
+        theme === t.id ? "ring-2 ring-purple-500" : ""
+      }`}
+    >
+      <div className={`w-12 h-12 rounded-full ${t.preview}`}></div>
+      <span className="text-sm">{t.name}</span>
+    </button>
+  ))}
+</div>
+
+    </div>
+  </div>
+)}
 
     </div>
 

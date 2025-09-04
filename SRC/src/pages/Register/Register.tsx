@@ -8,7 +8,7 @@ import omit from 'lodash/omit'
 import { IAuthSchema, AuthSchema } from 'src/utils/rules'
 import { isAxiosUnprocessableEntityError } from 'src/utils/utils'
 import { SuccessResponse } from 'src/types/utils.type'
-import { useContext } from 'react'
+import { useContext, useState } from 'react'
 import { AppContext } from 'src/contexts/app.context'
 import Button from 'src/components/Button'
 
@@ -75,6 +75,9 @@ export default function Register() {
       }
     })
   })
+  const [isOtpStep, setIsOtpStep] = useState(false)
+const [emailTemp, setEmailTemp] = useState('')
+
   return (
     <div className='h-[685px] bg-lime-200'>
       <div className="container bg-[url('https://salt.tikicdn.com/ts/upload/df/48/21/b4d225f471fe06887284e1341751b36e.png')] bg-contain bg-center bg-no-repeat">

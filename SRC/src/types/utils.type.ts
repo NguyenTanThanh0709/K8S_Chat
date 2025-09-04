@@ -56,6 +56,12 @@ export interface IMessage {
   sdpMLineIndex?: string;
   avt?: string;
   name?: string;
+  // ✅ Mảng reaction, mặc định rỗng
+  reactions?: {
+    user: string;      // phone
+    userName: string;  // tên
+    emoji: string;     // ❤️, 👍, 😂 ...
+  }[];
 }
 
 export interface IMessageExtended extends IMessage {

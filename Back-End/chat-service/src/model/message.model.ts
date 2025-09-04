@@ -40,6 +40,16 @@ const messageSchema = new Schema<IMessage & Document>({
     // NEW 👇
   deleted_by: { type: [String], default: [] },
   is_recalled: { type: Boolean, default: false }, // đánh dấu đã thu hồi
+
+reactions: [
+  {
+    user: { type: String, required: true }, // phone
+    userName: { type: String, required: true }, // tên
+    emoji: { type: String, required: true } // ❤️, 👍, 😂 ...
+  }
+],
+
+
 });
 
 // Tạo chỉ mục cho các trường cần tối ưu truy vấn

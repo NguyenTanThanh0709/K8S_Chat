@@ -438,6 +438,34 @@ export const sendResetPasswordEmail = async (to: string) => {
   return newPassword;
 };
 
+export const forgotPassword = async (email: string, phone: string) => {
+  const userRepo = AppDataSource.getRepository(User);
+
+  // tìm user theo email + phone
+  const user = await userRepo.findOne({ where: { email, phone } });
+  if (!user) {
+    throw new Error("User not found with this email and phone");
+  }
+
+  // sinh mật khẩu mới
+  const newPassword = generatePassword(8);
+
+  user.password_hash = newPassword;
+  await userRepo.save(user);
+
+  // gửi email
+  const mailOptions = {
+    from: '"My App" <lekhanhuyenn.12@gmail.com>',
+    to: email,
+    subject: "Reset mật khẩu",
+    text: `Xin chào ${user.name},\n\nMật khẩu mới của bạn là: ${newPassword}\n\nHãy đăng nhập và đổi lại mật khẩu trong phần cài đặt.`,
+  };
+
+  await transporter.sendMail(mailOptions);
+
+  return { message: "New password has been sent to your email" };
+};
+
 
 export const toggleUserStatusService = async (phone: string) => {
   const userRepo = AppDataSource.getRepository(User);

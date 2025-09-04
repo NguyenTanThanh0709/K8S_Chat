@@ -292,6 +292,44 @@ static async  getNextMediaMessage(currentMessageId: string) {
   return nextMedia;
 }
 
+static async  editMessage(currentMessageId: string, text: string) {
+  const currentMessage = await MessageModel.findById(currentMessageId);
+  if (!currentMessage) throw new Error("Message not found");
+  currentMessage.text = text;
+  await currentMessage.save();
+
+  return currentMessage;
+}
+
+  static async addReaction(messageId: string, user: string, userName: string, emoji: string) {
+    const message = await MessageModel.findById(messageId);
+    if (!message) throw new Error("Message not found");
+
+    // Nếu user đã reaction -> cập nhật emoji
+    const existing = message.reactions.find((r) => r.user === user);
+    if (existing) {
+      existing.emoji = emoji;
+      existing.userName = userName; // cập nhật tên (nếu đổi)
+    } else {
+      message.reactions.push({ user, userName, emoji });
+    }
+
+    await message.save();
+    return message;
+  }
+
+  // 👉 Gỡ reaction của user
+  static async removeReaction(messageId: string, user: string) {
+    const message = await MessageModel.findById(messageId);
+    if (!message) throw new Error("Message not found");
+
+    message.reactions = message.reactions.filter((r) => r.user !== user);
+    await message.save();
+
+    return message;
+  }
+
+
 
 
 }

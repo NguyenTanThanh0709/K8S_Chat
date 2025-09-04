@@ -178,5 +178,61 @@ static async deleteMessageForMe(req: Request, res: Response): Promise<void> {
     }
   }
 
+  static async editMessage(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params; // lấy messageId từ params
+      const { text } = req.body; // text mới từ body
+
+      const updatedMessage = await MessageService.editMessage(id, text);
+
+      if (!updatedMessage) {
+        res.status(404).json({ message: "Message not found" });
+        return;
+      }
+
+      res.status(200).json(updatedMessage);
+    } catch (error: any) {
+      console.error("editMessage error:", error);
+      res
+        .status(500)
+        .json({ message: error.message || "Internal server error" });
+    }
+  }
+
+  // POST /api/chat/message/:id/react
+  static async addReaction(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { user, userName, emoji } = req.body;
+
+      if (!user || !userName || !emoji) {
+        res.status(400).json({ message: "user, userName và emoji là bắt buộc" });
+        return;
+      }
+
+      const updatedMessage = await MessageService.addReaction(id, user, userName, emoji);
+      res.status(200).json(updatedMessage);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Internal server error" });
+    }
+  }
+
+  // DELETE /api/chat/message/:id/react
+  static async removeReaction(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+      const { user } = req.body;
+
+      if (!user) {
+        res.status(400).json({ message: "user là bắt buộc" });
+        return;
+      }
+
+      const updatedMessage = await MessageService.removeReaction(id, user);
+      res.status(200).json(updatedMessage);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message || "Internal server error" });
+    }
+  }
 
 }

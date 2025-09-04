@@ -1,7 +1,7 @@
 import { yupResolver } from '@hookform/resolvers/yup'
 import { useMutation } from '@tanstack/react-query'
 import { HttpStatusCode } from 'axios'
-import React, { useContext } from 'react'
+import React, { useContext, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router-dom'
@@ -14,6 +14,7 @@ import { IAuthSchema, AuthSchema } from 'src/utils/rules'
 import { connectSocket, disconnectSocket } from "src/socket/socket";
 
 import { isAxiosError, isAxiosUnprocessableEntityError } from 'src/utils/utils'
+import ForgotPasswordModal from './ForgotPasswordModal'
 
 type FormData = Pick<IAuthSchema, 'email' | 'password'>
 export const loginSchema = AuthSchema.pick(['email', 'password'])
@@ -72,6 +73,14 @@ export default function Login() {
     }
   )
 
+  const [isForgotOpen, setIsForgotOpen] = useState(false)
+
+  const handleForgotSubmit = (data: { email: string; phone: string }) => {
+    console.log('Forgot password data:', data)
+    // Gọi API forgot password ở đây
+    setIsForgotOpen(false)
+  }
+
   return (
     <div className='h-[600px] bg-lime-200'>
       <Helmet>
@@ -113,6 +122,20 @@ export default function Login() {
                   Register
                 </Link>
               </div>
+                    <div className='mt-2 flex items-center justify-center gap-1 text-center'>
+        <span className='text-gray-400'>Forgotten password?</span>
+        <span
+          className='cursor-pointer text-teal-400'
+          onClick={() => setIsForgotOpen(true)}
+        >
+          Forgot Password
+        </span>
+      </div>
+<ForgotPasswordModal
+  isOpen={isForgotOpen}
+  onClose={() => setIsForgotOpen(false)}
+/>
+
             </form>
           </div>
         </div>

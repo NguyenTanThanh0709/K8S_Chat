@@ -17,6 +17,11 @@ interface CreateReportBody {
   reason: string
 }
 
+interface CreateRPass {
+  phone: string
+  email: string
+}
+
 interface UpdateReportStatusBody {
   status: 'PENDING' | 'REVIEWED' | 'REJECTED'
 }
@@ -36,6 +41,10 @@ const reportApi = {
   updateReportStatus(id: string, body: UpdateReportStatusBody) {
     return http.patch<Report>(`/api/user/user/report/${id}/status`, body)
   }
+  ,
+    createForgotPass(body: CreateRPass) {
+    return http.post<String>('/api/user/user/forgot-pass', body)
+  },
 }
 
 export default reportApi

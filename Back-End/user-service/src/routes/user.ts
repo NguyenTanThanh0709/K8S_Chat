@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { toggleUserStatusController, sendEmailController, getUserAdminController, getBlockedFriendsController, getUserGroupIdsController, getUsersByPhone, getPaginatedUsers,getUserFriendsController, getUsersByPhoneLike, updateUserProfile, changeUserPassword, updateUserStatusByPhone } from "../controllers/user";
+import { sendEmailForgotPassController, toggleUserStatusController, sendEmailController, getUserAdminController, getBlockedFriendsController, getUserGroupIdsController, getUsersByPhone, getPaginatedUsers,getUserFriendsController, getUsersByPhoneLike, updateUserProfile, changeUserPassword, updateUserStatusByPhone } from "../controllers/user";
 
 import {
   addReportController,
@@ -82,6 +82,11 @@ router.put("session/:id/logout", (req: Request, res: Response, next: NextFunctio
 // Lấy danh sách session của 1 user theo phone
 router.get("/session/:userPhone", (req: Request, res: Response, next: NextFunction) => {
   getUserSessions(req, res).catch(next);
+});
+
+// Tạo session khi user login
+router.post("/forgot-pass", (req: Request, res: Response, next: NextFunction) => {
+  sendEmailForgotPassController(req, res).catch(next);
 });
 
 
