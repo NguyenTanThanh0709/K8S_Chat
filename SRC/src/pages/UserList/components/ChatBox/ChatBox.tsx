@@ -178,6 +178,10 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
 
   const sendTextMessage = async (message: string, clearInput: (msg: string) => void) => {
 
+    message = message.replace(/<br\s*\/?>/gi, '')  // xoá <br>
+    .replace(/\u200b/g, '')       // xoá zero-width space
+    .replace(/\n/g, '')           // xoá xuống dòng
+    .trim();
 
     if (isSending) return;
     setIsSending(true);
@@ -1232,22 +1236,23 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
 
 
         <div className="p-4 flex items-center gap-3 -t bg-white">
-          <InputEmoji
-            value={textMessage}
-            onChange={handleTyping}
-            fontFamily="Oswald"
-            // Color="rgba(10, 200, 10, 0.5)"
-            placeholder="Nhập tin nhắn..."
-            shouldReturn={true}
-            shouldConvertEmojiToImage={false}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) { // Shift+Enter vẫn xuống dòng
-                e.preventDefault();
-                sendTextMessage(textMessage, setTextMessage);
-              }
-            }}
+<InputEmoji
+  value={textMessage}
+  onChange={setTextMessage}
+  shouldReturn={false}   // ❌ Không cho xuống dòng
+  shouldConvertEmojiToImage={false}
+  placeholder="Nhập tin nhắn..."
+  onKeyDown={(e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      const cleanMsg = textMessage.replace(/\n/g, "").replace(/<br\s*\/?>/gi, "").trim();
+      if (cleanMsg) {
+        sendTextMessage(cleanMsg, setTextMessage);
+      }
+    }
+  }}
+/>
 
-          />
           <input type="file" onChange={handleFileChange} className="hidden" id="fileInput" />
           <label htmlFor="fileInput" title="Gửi file" className="cursor-pointer">📎</label>
 

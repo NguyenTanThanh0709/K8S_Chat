@@ -48,10 +48,10 @@ export default function SocketListeners() {
 
       if (msg.is_group) {
         // 🔔 Tin nhắn nhóm
-        toast.success(`👥 Tin nhắn mới trong nhóm  từ ${msg.name}`);
+        toast.success(`👥 Tin nhắn mới trong nhóm từ ${msg.name}`);
       } else {
         // 💬 Tin nhắn cá nhân
-        toast.success(`📩 Tin nhắn mới từ SĐT: ${msg.name}`);
+        toast.success(`📩 Tin nhắn mới từ : ${msg.name}`);
       }
     };
 
