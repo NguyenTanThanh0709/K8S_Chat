@@ -7,6 +7,7 @@ import {
   logoutUserSessionService,
   getUserSessionsService
 } from '../services/user.service';
+import crypto from "crypto";
 
 
 export const login = async (req: Request, res: Response): Promise<Response> => {
@@ -156,3 +157,63 @@ export const loginAdmin = async (req: Request, res: Response): Promise<Response>
     return res.status(500).json({ message: 'Internal Server Error' })
   }
 }
+
+
+import nodemailer from "nodemailer";
+
+const transporter = nodemailer.createTransport({
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // TLS
+  auth: {
+    user: "lekhanhuyenn.12@gmail.com",  // Gmail của bạn
+    pass: "frbgrgcfqhhzxgva",           // App password
+  },
+  tls: {
+    rejectUnauthorized: false,
+  },
+});
+
+export const generateOTP = (length: number = 4) => {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let password = "";
+  for (let i = 0; i < length; i++) {
+    const randomIndex = crypto.randomInt(0, chars.length);
+    password += chars[randomIndex];
+  }
+  return password;
+};
+
+export const sendOtp = async (req: Request, res: Response): Promise<Response> => {
+  const { email, phone } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email is required" });
+  }
+
+  try {
+    const otp = generateOTP(6);
+
+    // gửi mail
+    await transporter.sendMail({
+      from: `"Support" <lekhanhuyenn.12@gmail.com>`,
+      to: email,
+      subject: "Your OTP Code",
+      text: `Xin chào,\n\nMã OTP của bạn là: ${otp}\nSố điện thoại đăng ký: ${phone}\n\nVui lòng không chia sẻ mã này với bất kỳ ai.`,
+      html: `
+        <p>Xin chào,</p>
+        <p>Mã OTP của bạn là: <b>${otp}</b></p>
+        <p>Số điện thoại đăng ký: <b>${phone || "Không cung cấp"}</b></p>
+        <p><i>Vui lòng không chia sẻ mã này với bất kỳ ai.</i></p>
+      `,
+    });
+
+
+    // ⚠️ Lưu ý: chỉ demo mới trả OTP về client, production KHÔNG LÀM VẬY
+    return res.status(200).json(otp);
+  } catch (error) {
+    console.error("Send OTP error:", error);
+    return res.status(500).json({ message: "Failed to send OTP" });
+  }
+};

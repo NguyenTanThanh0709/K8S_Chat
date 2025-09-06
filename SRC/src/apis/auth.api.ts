@@ -1,6 +1,7 @@
 import { AuthResponse } from 'src/types/auth.type'
 import http from 'src/utils/http'
 export const URL_LOGIN = '/api/user/auth/login'
+export const URL_OTP = '/api/user/auth/otp'
 export const URL_LOGIN_ADMIN = '/api/user/auth/login-admin'
 export const URL_REGISTER = '/api/user/auth/register'
 export const URL_LOGOUT = '/api/user/auth/logout'
@@ -15,6 +16,10 @@ const authApi = {
   },
   logoutAccount() {
     return http.post(URL_LOGOUT)
-  }
+  },
+  
+  sendOtpAccount(body: { email: string; phone: string }) {
+    return http.post<string>(URL_OTP, body)
+  },
 }
 export default authApi

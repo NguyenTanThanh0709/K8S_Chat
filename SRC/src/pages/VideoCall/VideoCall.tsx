@@ -272,10 +272,6 @@ const VideoCall: React.FC = () => {
             ref={(video) => video && (video.srcObject = entries[0][1])}
             className="w-full h-full object-cover rounded-lg"
           />
-<div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
-  {remoteUsers[peerId] || "Unknown"}
-</div>
-
         </div>
       );
     }

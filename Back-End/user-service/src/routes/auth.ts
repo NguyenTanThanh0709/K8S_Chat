@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from "express";
-import { loginAdmin, login, register, logout } from "../controllers/auth";
+import { sendOtp, loginAdmin, login, register, logout } from "../controllers/auth";
 
 const router: Router = Router();
 
@@ -17,6 +17,10 @@ router.post('/register', (req: Request, res: Response, next: NextFunction) => {
 
 router.post('/logout', (req: Request, res: Response, next: NextFunction) => {
     logout(req, res).catch(next);
+});
+
+router.post('/otp', (req: Request, res: Response, next: NextFunction) => {
+    sendOtp(req, res).catch(next);
 });
 
 export default router;

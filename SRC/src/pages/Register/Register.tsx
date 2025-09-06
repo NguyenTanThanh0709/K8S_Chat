@@ -32,8 +32,19 @@ export default function Register() {
       return authApi.registerAccount(body)
     }
   })
+const [otp, setOtp] = useState('')
+
   // handle submit
   const onSubmit = handleSubmit((data) => {
+
+    const savedOtp = localStorage.getItem('otp_code') // lấy OTP từ localStorage
+
+  if (savedOtp !== otp) {
+    // báo lỗi OTP sai
+    alert('OTP không đúng, vui lòng thử lại!')
+    return
+  }
+
     console.log('data', data)
     console.log('errors', errors)
     const body = omit(data, ['confirm_password'])
@@ -75,8 +86,20 @@ export default function Register() {
       }
     })
   })
-  const [isOtpStep, setIsOtpStep] = useState(false)
-const [emailTemp, setEmailTemp] = useState('')
+const [isOtpSent, setIsOtpSent] = useState(false)
+const [isOtpVerified, setIsOtpVerified] = useState(false)
+
+// gửi OTP
+// gửi OTP
+const sendOtpMutation = useMutation({
+  mutationFn: (body: { email: string; phone: string }) => authApi.sendOtpAccount(body),
+  onSuccess: (otpResponse) => {
+    const otp = otpResponse.data // đây mới là string "123456"
+    localStorage.setItem('otp_code', otp)
+    setIsOtpSent(true)
+  }
+})
+
 
   return (
     <div className='h-[685px] bg-lime-200'>
@@ -140,13 +163,46 @@ const [emailTemp, setEmailTemp] = useState('')
                 />
               </div>
 
-              <Button
+              {/* <Button
                 isLoading={registerAccountMutation.isLoading}
                 disabled={registerAccountMutation.isLoading}
                 className='flex w-full justify-center bg-teal-500 py-4 px-2 text-sm uppercase text-white hover:bg-teal-600'
               >
                 Đăng ký
-              </Button>
+              </Button> */}
+  {/* Bước 1: Gửi OTP */}
+  {!isOtpSent && (
+    <Button
+      type='button'
+      isLoading={sendOtpMutation.isLoading}
+      disabled={sendOtpMutation.isLoading}
+      onClick={handleSubmit((data) => sendOtpMutation.mutate({ email: data.email, phone: data.phone }))}
+      className='flex w-full justify-center bg-blue-500 py-4 px-2 text-sm uppercase text-white hover:bg-blue-600'
+    >
+      Gửi OTP
+    </Button>
+  )}
+
+  {/* Bước 2: Nhập OTP */}
+  {isOtpSent && !isOtpVerified && (
+    <>
+<input
+  type="text"
+  placeholder="Nhập OTP"
+  value={otp}
+  onChange={(e) => setOtp(e.target.value)}
+  className="mt-4 w-full rounded border border-gray-300 px-3 py-2 focus:border-blue-500 focus:outline-none"
+/>
+    <Button
+      isLoading={registerAccountMutation.isLoading}
+      disabled={registerAccountMutation.isLoading}
+      className='flex w-full justify-center bg-teal-500 py-4 px-2 text-sm uppercase text-white hover:bg-teal-600'
+    >
+      Đăng ký
+    </Button>
+    </>
+  )}
+
               <div className='mt-8 flex items-center justify-center gap-1 text-center'>
                 <span className='text-gray-400'>Do you have an account?</span>
                 <Link to='/login' className='text-teal-400'>

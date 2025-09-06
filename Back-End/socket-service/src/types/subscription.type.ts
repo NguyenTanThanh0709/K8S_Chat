@@ -15,6 +15,7 @@ export enum OrderEvent {
 
 
   export interface IMessage {
+    _id: string;
     sender: string;
     receiver: string;
     is_group: boolean;

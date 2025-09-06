@@ -104,10 +104,10 @@ export class MessageService {
         ];
       }
 
-          // Bỏ qua tin nhắn mà currentUser đã xoá
-    if (sender) {
-      query.deleted_by = { $ne: sender };
-    }
+      // Bỏ qua tin nhắn mà currentUser đã xoá
+      if (sender) {
+        query.deleted_by = { $ne: sender };
+      }
 
 
       // If the lastMessageTimestamp is provided, add it to the query
@@ -145,7 +145,7 @@ export class MessageService {
     if (message.sender !== userPhone) throw new Error('Bạn không thể thu hồi tin nhắn của người khác');
 
     message.is_recalled = true;
-    message.text = '';
+    message.text = 'unsent a message';
     message.name_file = '';
     message.url_file = '';
     message.content_type = 'text';
@@ -154,17 +154,17 @@ export class MessageService {
   }
 
   static async deleteMessageForMe(messageId: string, userPhone: string): Promise<IMessage> {
-  const message = await MessageModel.findById(messageId);
+    const message = await MessageModel.findById(messageId);
 
-  if (!message) throw new Error('Tin nhắn không tồn tại');
+    if (!message) throw new Error('Tin nhắn không tồn tại');
 
-  if (!message.deleted_by?.includes(userPhone)) {
-    message.deleted_by?.push(userPhone);
-    await message.save();
+    if (!message.deleted_by?.includes(userPhone)) {
+      message.deleted_by?.push(userPhone);
+      await message.save();
+    }
+
+    return message;
   }
-
-  return message;
-}
 
   static async deleteAllMessagesForMe(
     userPhone: string,
@@ -201,34 +201,34 @@ export class MessageService {
   }
 
   static async searchMessages(
-  userPhone: string,
-  receiver: string,
-  isGroup: boolean,
-  keyword: string,
-  limit: number = 20
-): Promise<IMessage[]> {
-  let query: any = { 
-    is_group: isGroup,
-    text: { $regex: keyword, $options: 'i' },
-    deleted_by: { $ne: userPhone }
-  };
+    userPhone: string,
+    receiver: string,
+    isGroup: boolean,
+    keyword: string,
+    limit: number = 20
+  ): Promise<IMessage[]> {
+    let query: any = {
+      is_group: isGroup,
+      text: { $regex: keyword, $options: 'i' },
+      deleted_by: { $ne: userPhone }
+    };
 
-  if (isGroup) query.receiver = receiver;
-  else query.$or = [
-    { sender: userPhone, receiver },
-    { sender: receiver, receiver: userPhone }
-  ];
+    if (isGroup) query.receiver = receiver;
+    else query.$or = [
+      { sender: userPhone, receiver },
+      { sender: receiver, receiver: userPhone }
+    ];
 
-  const messages = await MessageModel.find(query)
-    .sort({ timestamp: -1 })
-    .limit(limit)
-    .exec();
+    const messages = await MessageModel.find(query)
+      .sort({ timestamp: -1 })
+      .limit(limit)
+      .exec();
 
-  return messages;
-}
+    return messages;
+  }
 
 
- // Lấy tin nhắn từ 1 timestamp đến hiện tại
+  // Lấy tin nhắn từ 1 timestamp đến hiện tại
   static async getMessagesFromDate(
     userPhone: string,
     receiver: string,
@@ -253,53 +253,53 @@ export class MessageService {
 
 
   // Lấy message ảnh/video ngay trước message hiện tại
-static async  getPrevMediaMessage(currentMessageId: string) {
-  const currentMessage = await MessageModel.findById(currentMessageId);
-  if (!currentMessage) throw new Error("Message not found");
+  static async getPrevMediaMessage(currentMessageId: string) {
+    const currentMessage = await MessageModel.findById(currentMessageId);
+    if (!currentMessage) throw new Error("Message not found");
 
-  const prevMedia = await MessageModel.findOne({
-    $or: [
-      { sender: currentMessage.sender, receiver: currentMessage.receiver },
-      { sender: currentMessage.receiver, receiver: currentMessage.sender }
-    ],
-    is_group: currentMessage.is_group,
-    content_type: { $in: ["image", "video"] },
-    timestamp: { $lt: currentMessage.timestamp } // nhỏ hơn => phía trước
-  })
-    .sort({ timestamp: -1 }) // lấy gần nhất phía trước
-    .exec();
+    const prevMedia = await MessageModel.findOne({
+      $or: [
+        { sender: currentMessage.sender, receiver: currentMessage.receiver },
+        { sender: currentMessage.receiver, receiver: currentMessage.sender }
+      ],
+      is_group: currentMessage.is_group,
+      content_type: { $in: ["image", "video"] },
+      timestamp: { $lt: currentMessage.timestamp } // nhỏ hơn => phía trước
+    })
+      .sort({ timestamp: -1 }) // lấy gần nhất phía trước
+      .exec();
 
-  return prevMedia;
-}
+    return prevMedia;
+  }
 
-// Lấy message ảnh/video ngay sau message hiện tại
-static async  getNextMediaMessage(currentMessageId: string) {
-  const currentMessage = await MessageModel.findById(currentMessageId);
-  if (!currentMessage) throw new Error("Message not found");
+  // Lấy message ảnh/video ngay sau message hiện tại
+  static async getNextMediaMessage(currentMessageId: string) {
+    const currentMessage = await MessageModel.findById(currentMessageId);
+    if (!currentMessage) throw new Error("Message not found");
 
-  const nextMedia = await MessageModel.findOne({
-    $or: [
-      { sender: currentMessage.sender, receiver: currentMessage.receiver },
-      { sender: currentMessage.receiver, receiver: currentMessage.sender }
-    ],
-    is_group: currentMessage.is_group,
-    content_type: { $in: ["image", "video"] },
-    timestamp: { $gt: currentMessage.timestamp } // lớn hơn => phía sau
-  })
-    .sort({ timestamp: 1 }) // lấy gần nhất phía sau
-    .exec();
+    const nextMedia = await MessageModel.findOne({
+      $or: [
+        { sender: currentMessage.sender, receiver: currentMessage.receiver },
+        { sender: currentMessage.receiver, receiver: currentMessage.sender }
+      ],
+      is_group: currentMessage.is_group,
+      content_type: { $in: ["image", "video"] },
+      timestamp: { $gt: currentMessage.timestamp } // lớn hơn => phía sau
+    })
+      .sort({ timestamp: 1 }) // lấy gần nhất phía sau
+      .exec();
 
-  return nextMedia;
-}
+    return nextMedia;
+  }
 
-static async  editMessage(currentMessageId: string, text: string) {
-  const currentMessage = await MessageModel.findById(currentMessageId);
-  if (!currentMessage) throw new Error("Message not found");
-  currentMessage.text = text;
-  await currentMessage.save();
+  static async editMessage(currentMessageId: string, text: string) {
+    const currentMessage = await MessageModel.findById(currentMessageId);
+    if (!currentMessage) throw new Error("Message not found");
+    currentMessage.text = text;
+    await currentMessage.save();
 
-  return currentMessage;
-}
+    return currentMessage;
+  }
 
   static async addReaction(messageId: string, user: string, userName: string, emoji: string) {
     const message = await MessageModel.findById(messageId);

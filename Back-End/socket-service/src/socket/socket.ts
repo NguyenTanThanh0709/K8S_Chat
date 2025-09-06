@@ -117,6 +117,19 @@ export async function initializeSocketServer(io: Server) {
       }
     });
 
+    socket.on("message:update", async (data) => {
+    const { type, messageId, is_group, emoji, userId, userName, newContent, receiver } = data;
+    if (is_group) {
+      socket.to(receiver.toString()).emit("message:update", data);
+    } else {
+        const receiverSocketIds = await getReceiverSocketIds(receiver);
+        if (receiverSocketIds.length > 0) {
+          for (const sid of receiverSocketIds) {
+            io.to(sid).emit("message:update", data);
+          }
+        } 
+    }
+  });
 
     socket.on("sendMessage", async (message: IMessageExtended) => {
       console.log("📩 Message received:", message);

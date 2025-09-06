@@ -9,7 +9,7 @@ import { useSocketContext } from 'src/contexts/SocketContext';
 import { useNavigate } from 'react-router-dom'
 import { IMessageExtended } from 'src/types/utils.type';
 import reportApi from 'src/apis/report.api'
-
+import { ObjectId } from "bson";
 
 interface Props {
   selectedCategory: string;
@@ -114,7 +114,10 @@ export default function UserComponent({ selectedCategory, setSelectedCategory, p
     setIsMessageModalOpen(false)
 
     let newMsg: IMessageExtended;
+    let tempId = new ObjectId().toHexString(); // ví dụ "64f4e2a0c2b7a1b3d4e5f6a7"
+
     newMsg = {
+      _id: tempId,
       text: messageText,
       sender: profileDataLS.phone || '',
       receiver: phone || '',

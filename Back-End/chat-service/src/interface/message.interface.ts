@@ -1,4 +1,7 @@
+import { Types } from 'mongoose';
+
 export interface IMessage {
+  _id: Types.ObjectId;
   sender: string;
   receiver: string;
   is_group: boolean;

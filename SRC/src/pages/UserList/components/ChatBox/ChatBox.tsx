@@ -18,6 +18,7 @@ import { GetMessagesQuery, IMessage } from 'src/types/utils.type';
 import { useDebounce } from 'use-debounce';
 import { v4 as uuidv4 } from "uuid";
 import Popover from '../../../../components/Popover';
+import { ObjectId } from "bson";
 
 interface AsideFilterMessageProps {
   selectedCategory: string;
@@ -43,7 +44,6 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
   const scroll = useRef<HTMLDivElement>(null);
   const chatBodyRef = useRef<HTMLDivElement>(null);
 
-  const [mediaPreview, setMediaPreview] = useState<{ type: 'image' | 'video'; url: string } | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [typingUsers, setTypingUsers] = useState<{ id: string, avt: string }[]>([]);
@@ -57,15 +57,12 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
     }
   }, [allMessages]);
 
-
-
   const [scale, setScale] = useState(1);
   const [rotation, setRotation] = useState(0);
 
   const handleZoomIn = () => setScale((prev) => prev + 0.2);
   const handleZoomOut = () => setScale((prev) => Math.max(0.2, prev - 0.2));
   const handleRotate = () => setRotation((prev) => prev + 90);
-
 
   const { messagesData, userData, groupResponse } = useMessages();
   const messagesDataRef = useRef(messagesData);
@@ -163,8 +160,6 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
       }
     };
 
-
-
     container.addEventListener('scroll', handleScroll);
     return () => container.removeEventListener('scroll', handleScroll);
   }, [allMessages, loadingMore]);
@@ -186,6 +181,8 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
 
     if (isSending) return;
     setIsSending(true);
+    const tempId = new ObjectId().toHexString(); // ví dụ "64f4e2a0c2b7a1b3d4e5f6a7"
+
 
     let newMsg: IMessage;
     if (previewImage && file) {
@@ -203,6 +200,7 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
         return;
       }
       newMsg = {
+        _id: tempId,
         text: message,
         sender: PhoneSender,
         receiver: messagesData?.receiver || '',
@@ -227,6 +225,7 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
     setAllMessages(prev => [...prev, newMsg]);
     clearInput("");
     setIsSending(false);
+    fetchMessages()
   };
 
   const resetUnreadCount = async (userPhone: string, friendPhone: string, groupId: string) => {
@@ -258,6 +257,34 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
     }
 
   };
+
+
+  useEffect(() => {
+    if (!socket) return
+    socket.on("message:update", (data) => {
+      setAllMessages((prev) =>
+        prev.map((msg) =>
+          msg._id === data.messageId
+            ? {
+              ...msg,
+              ...(data.type === "react" && {
+                reactions: [...(msg.reactions || []), { user: data.userId, userName: data.userName, emoji: data.emoji }]
+              }),
+              ...(data.type === "edit" && { text: data.newContent }),
+              ...(data.type === "recall" && { text: data.newContent })
+            }
+            : msg
+        )
+      );
+    });
+
+    return () => {
+      socket.off("message:update");
+    };
+  }, []);
+
+
+
 
   useEffect(() => {
 
@@ -330,7 +357,10 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
       if (!isValidContentType(typeFile)) {
         throw new Error("Invalid content type");
       }
+      const tempId = new ObjectId().toHexString(); // ví dụ "64f4e2a0c2b7a1b3d4e5f6a7"
+
       const newMsg: IMessage = {
+        _id: tempId,
         sender: PhoneSender,
         receiver: messagesData?.receiver || '',
         is_group: selectedCategory == '2',
@@ -416,8 +446,6 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
           name: profileDataLS?.name
         });
 
-
-
         const phones = [callerId, receiverId].sort();
         const roomId = `room${phones[0]}${phones[1]}`;
         const url = `/call?roomId=${roomId}&callerId=${callerId}&receiverId=${receiverId}&type=sent&isGroup=0`;
@@ -486,7 +514,6 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
       return
     }
 
-
     if (!isTyping) {
       setIsTyping(true);
       if (!socket) {
@@ -534,10 +561,21 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
       await messagesApi.recallMessage(messageId, PhoneSender);
       setAllMessages((prev) =>
         prev.map((m) =>
-          m._id === messageId ? { ...m, is_recalled: true, text: '', url_file: undefined, name_file: undefined } : m
+          m._id === messageId ? { ...m, is_recalled: true, text: 'unsent a message', url_file: undefined, name_file: undefined } : m
         )
       );
       toast.success("Thu hồi tin nhắn thành công");
+      if (!socket) return
+      // emit socket để realtime
+      const isGroup = selectedCategory !== '1';
+      socket.emit("message:update", {
+        type: "recall", // hoặc "react", "recall", "edit"
+        messageId,
+        isGroup,
+        receiver: messagesData?.receiver || '',
+        newContent: 'unsent a message',
+        emoji: '' // nếu là react
+      });
     } catch (err) {
       toast.error("Thu hồi tin nhắn thất bại");
       console.error(err);
@@ -565,8 +603,6 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
   const [isOpen, setIsOpen] = useState(false); // modal mở/tắt
   const [keyword, setKeyword] = useState(""); // từ khoá tìm kiếm
   const [searchKeyword, setsearchKeyword] = useState<IMessage[]>([]); // kết quả tìm kiếm
-  const [searchKeyword1, setsearchKeyword1] = useState<IMessage[]>([]); // kết quả tìm kiếm
-  const currentUser = PhoneSender; // để xác định "Bạn"
   const handleSearch = async () => {
     if (!keyword.trim()) return;
 
@@ -659,8 +695,6 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
   const [editingMessage, setEditingMessage] = useState<IMessage | null>(null);
   const [editText, setEditText] = useState("");
 
-
-
   const handleEdit = (msg: IMessage) => {
     setEditingMessage(msg);
     setEditText(msg.text || "");
@@ -671,7 +705,7 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
   const mutationEditMessage = useMutation({
     mutationFn: ({ id, text }: { id: string; text: string }) =>
       messagesApi.editMessage(id, text),
-    onSuccess: (res) => {
+    onSuccess: (res, variables) => {
       setAllMessages((prev) =>
         prev.map((m) => (m._id === res.data._id ? res.data : m))
       );
@@ -679,72 +713,98 @@ export default function ChatBox({ selectedCategory, isChatBox, setIsChatBox }: A
       setIsEditModalOpen(false);
       setEditingMessage(null);
       setEditText("");
+      if (!socket) return
+      // emit socket để realtime
+      const isGroup = selectedCategory !== '1';
+      socket.emit("message:update", {
+        type: "edit", // hoặc "react", "recall", "edit"
+        messageId: variables.id,
+        isGroup,
+        receiver: messagesData?.receiver || '',
+        newContent: variables.text,
+        emoji: '' // nếu là react
+      });
     },
     onError: () => {
       toast.error("Sửa tin nhắn thất bại");
     },
   });
 
-const handleReactMessage = async (messageId: string, emoji: string) => {
-  if (!profileDataLS) return;
-  try {
-    // tìm xem user đã react emoji này chưa
-    const message = allMessages.find((m) => m._id === messageId);
-    const hasReacted = message?.reactions?.some(
-      (r) => r.user === profileDataLS.phone && r.emoji === emoji
-    );
-
-    let res: AxiosResponse<IMessage>;
-    if (hasReacted) {
-      // gỡ reaction
-      res = await messagesApi.editRemoveReactMessage(messageId, PhoneSender);
-    } else {
-      // thêm reaction
-      res = await messagesApi.editAddreactMessage(
-        messageId,
-      PhoneSender,
-      nameSender,
-        emoji
+  const handleReactMessage = async (messageId: string, emoji: string) => {
+    if (!profileDataLS) return;
+    try {
+      // tìm xem user đã react emoji này chưa
+      const message = allMessages.find((m) => m._id === messageId);
+      const hasReacted = message?.reactions?.some(
+        (r) => r.user === profileDataLS.phone && r.emoji === emoji
       );
+
+      let res: AxiosResponse<IMessage>;
+      if (hasReacted) {
+        // gỡ reaction
+        res = await messagesApi.editRemoveReactMessage(messageId, PhoneSender);
+      } else {
+        // thêm reaction
+        res = await messagesApi.editAddreactMessage(
+          messageId,
+          PhoneSender,
+          nameSender,
+          emoji
+        );
+      }
+
+      // cập nhật state
+      setAllMessages((prev) =>
+        prev.map((m) => (m._id === messageId ? res.data : m))
+      );
+
+      if (!socket) return
+      // emit socket để realtime
+      const isGroup = selectedCategory !== '1';
+      socket.emit("message:update", {
+        type: "react", // hoặc "react", "recall", "edit"
+        messageId,
+        isGroup,
+        userId: profileDataLS.phone,
+        userName: nameSender,
+        receiver: messagesData?.receiver || '',
+        newContent: '',
+        emoji: emoji // nếu là react
+      });
+    } catch (err) {
+      console.error("React message error:", err);
+      toast.error("Không thể cập nhật reaction");
     }
+  };
 
-    // cập nhật state
-    setAllMessages((prev) =>
-      prev.map((m) => (m._id === messageId ? res.data : m))
-    );
+  const [isThemeOpen, setIsThemeOpen] = useState(false);
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem("theme") || "light";
+  });
 
-    // emit socket để realtime
-    socket?.emit("message:react", res.data);
-  } catch (err) {
-    console.error("React message error:", err);
-    toast.error("Không thể cập nhật reaction");
-  }
-};
+  const themes = [
+    { id: "light", name: "Sáng", preview: "bg-gray-50 border", className: "bg-gray-50 text-gray-800" },
+    { id: "dark", name: "Tối", preview: "bg-gray-900", className: "bg-gray-900 text-green" },
+    { id: "ocean", name: "Xanh biển", preview: "bg-blue-500", className: "bg-blue-100 text-blue-900" },
+    { id: "forest", name: "Xanh lá", preview: "bg-green-500", className: "bg-green-100 text-green-900" },
+  ];
 
-const [isThemeOpen, setIsThemeOpen] = useState(false);
-const [theme, setTheme] = useState(() => {
-  return localStorage.getItem("theme") || "light";
-});
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme) {
+      console.log("Loaded theme:", savedTheme);
+      setTheme(savedTheme);
+    }
+  }, []);
 
-const themes = [
-  { id: "light", name: "Sáng", preview: "bg-white border", className: "bg-gray-50 text-gray-800" },
-  { id: "dark", name: "Tối", preview: "bg-gray-900", className: "bg-gray-900 text-green" },
-  { id: "ocean", name: "Xanh biển", preview: "bg-blue-500", className: "bg-blue-100 text-blue-900" },
-  { id: "forest", name: "Xanh lá", preview: "bg-green-500", className: "bg-green-100 text-green-900" },
-];
+  useEffect(() => {
+    console.log("Saving theme:", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
-useEffect(() => {
-  const savedTheme = localStorage.getItem("theme");
-  if (savedTheme) {
-    console.log("Loaded theme:", savedTheme);
-    setTheme(savedTheme);
-  }
-}, []);
 
-useEffect(() => {
-  console.log("Saving theme:", theme);
-  localStorage.setItem("theme", theme);
-}, [theme]);
+
+
 
 
   return (
@@ -788,12 +848,12 @@ useEffect(() => {
             </button>
 
             <button
-  onClick={() => setIsThemeOpen(true)}
-  title="Đổi giao diện"
-  className="hover:bg-purple-100 p-2 rounded-full"
->
-  🎨
-</button>
+              onClick={() => setIsThemeOpen(true)}
+              title="Đổi giao diện"
+              className="hover:bg-purple-100 p-2 rounded-full"
+            >
+              🎨
+            </button>
 
             <div className="flex items-center gap-3">
               {/* Button tìm kiếm */}
@@ -932,8 +992,8 @@ useEffect(() => {
           </div>
         </div>
 
-          
-        <div ref={chatBodyRef} style={{ minHeight: '200px' }}   className={`flex-1 overflow-y-auto overflow-x-hidden px-4 py-2 space-y-2 ${themes.find(t => t.id === theme)?.className}`}>
+
+        <div ref={chatBodyRef} style={{ minHeight: '200px' }} className={`flex-1 overflow-y-auto overflow-x-hidden px-4 py-2 space-y-2 ${themes.find(t => t.id === theme)?.className}`}>
           {loadingMore && <div className="text-center text-sm text-gray-400">Đang tải thêm...</div>}
           {allMessages.map((message, index) => {
             const isOwnMessage = message.sender === PhoneSender;
@@ -1015,9 +1075,6 @@ useEffect(() => {
                         </div>
                       }
                     >
-
-
-
                       {/* Bubble */}
                       <div
                         className={`p-3 rounded-xl text-sm inline-block break-words leading-relaxed
@@ -1099,7 +1156,6 @@ useEffect(() => {
                         )}
                       </div>
 
-
                     </Popover>
                     {/* ✅ SHOW REACTIONS */}
                     {message.reactions && message.reactions.length > 0 && (
@@ -1137,8 +1193,6 @@ useEffect(() => {
             </div>
           )}
         </div>
-
-
 
         {previewImage && (
           <div className="flex items-center gap-2 mb-2">
@@ -1324,44 +1378,43 @@ useEffect(() => {
         </div>
       )}
 
-{isThemeOpen && (
-  <div
-    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-    onClick={() => setIsThemeOpen(false)}
-  >
-    <div
-      className="bg-white rounded-lg p-4 max-w-md w-full relative"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <h3 className="text-lg font-semibold mb-2">Chọn giao diện</h3>
-      <button
-        onClick={() => setIsThemeOpen(false)}
-        className="absolute top-2 right-2 text-red-500"
-      >
-        ✕
-      </button>
+      {isThemeOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => setIsThemeOpen(false)}
+        >
+          <div
+            className="bg-white rounded-lg p-4 max-w-md w-full relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold mb-2">Chọn giao diện</h3>
+            <button
+              onClick={() => setIsThemeOpen(false)}
+              className="absolute top-2 right-2 text-red-500"
+            >
+              ✕
+            </button>
 
-<div className="grid grid-cols-2 gap-4 mt-4">
-  {themes.map((t) => (
-    <button
-      key={t.id}
-      onClick={() => {
-        setTheme(t.id);
-        setIsThemeOpen(false);
-      }}
-      className={`p-4 rounded-lg shadow-md flex flex-col items-center gap-2 ${
-        theme === t.id ? "ring-2 ring-purple-500" : ""
-      }`}
-    >
-      <div className={`w-12 h-12 rounded-full ${t.preview}`}></div>
-      <span className="text-sm">{t.name}</span>
-    </button>
-  ))}
-</div>
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              {themes.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    setTheme(t.id);
+                    setIsThemeOpen(false);
+                  }}
+                  className={`p-4 rounded-lg shadow-md flex flex-col items-center gap-2 ${theme === t.id ? "ring-2 ring-purple-500" : ""
+                    }`}
+                >
+                  <div className={`w-12 h-12 rounded-full ${t.preview}`}></div>
+                  <span className="text-sm">{t.name}</span>
+                </button>
+              ))}
+            </div>
 
-    </div>
-  </div>
-)}
+          </div>
+        </div>
+      )}
 
     </div>
 

@@ -2,6 +2,7 @@ import { Schema, model, Document } from 'mongoose';
 import { IMessage } from '../interface/message.interface';
 
 const messageSchema = new Schema<IMessage & Document>({
+   _id: { type: Schema.Types.ObjectId, required: true }, // 👈 cho phép client truyền vào
   sender: { type: String, required: true },
   receiver: { type: String, required: true },
   is_group: { type: Boolean, required: true },
