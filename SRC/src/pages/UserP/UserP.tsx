@@ -8,6 +8,8 @@ import { useNavigate } from 'react-router-dom'
 import { AiOutlineArrowLeft } from 'react-icons/ai'
 import { toast } from 'react-toastify';
 import friendApi from 'src/apis/friend.api'
+import reportApi from 'src/apis/report.api'
+
 
 const UserP = () => {
     // const { phone, isFriend } = useParams()
@@ -112,6 +114,29 @@ const UserP = () => {
   }
 
 
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false)
+  const [reportReason, setReportReason] = useState('')
+
+    const handleReportUser = async () => {
+    if (!reportReason.trim()) {
+      toast.error('Vui lòng nhập lý do báo cáo!')
+      return
+    }
+    try {
+      const res = await reportApi.createReport({
+        reporter_phone: profileDataLS?.phone as string,
+        reported_phone: user?.data.data.phone as string,
+        reason: reportReason
+      })
+      toast.success('Báo cáo đã được gửi!')
+      setIsReportModalOpen(false)
+      setReportReason('')
+    } catch (error) {
+      console.error(error)
+      toast.error((error as any)?.response?.data?.message || 'Lỗi khi gửi báo cáo')
+    }
+  }
+
 
   return (
     <div className="max-w-3xl mx-auto mt-10 bg-white shadow-xl rounded-3xl overflow-hidden border border-gray-200">
@@ -183,9 +208,43 @@ const UserP = () => {
           <button onClick={handleBlockfriend} className="px-6 py-2 rounded-full bg-red-600 hover:bg-red-700 text-white font-semibold shadow">
             Chặn
           </button>
+            <button onClick={() => setIsReportModalOpen(true)} className="px-6 py-2 rounded-full bg-yellow-600 hover:bg-red-700 text-white font-semibold shadow">
+            Báo Cáo
+          </button>
         </div>
 
       </div>
+
+      {/* --- Report Modal --- */}
+      {isReportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6">
+            <h2 className="text-lg font-semibold mb-4">Báo cáo {user?.data.data.name}</h2>
+            <textarea
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              className="w-full border rounded-md p-2 mb-4 resize-none h-28"
+              placeholder="Nhập lý do báo cáo..."
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                className="px-4 py-2 rounded-md bg-gray-300 hover:bg-gray-400"
+                onClick={() => setIsReportModalOpen(false)}
+              >
+                Đóng
+              </button>
+              <button
+                className="px-4 py-2 rounded-md bg-yellow-500 text-white hover:bg-red-600"
+                onClick={handleReportUser}
+              >
+                Gửi báo cáo
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
     </div>
   )
 }
